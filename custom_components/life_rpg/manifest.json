@@ -5,6 +5,9 @@
     "ai_task",
     "conversation"
   ],
+  "categories": [
+    "health_wellbeing"
+  ],
   "codeowners": [
     "@soullink9"
   ],
