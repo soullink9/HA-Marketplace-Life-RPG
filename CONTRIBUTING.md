@@ -48,7 +48,8 @@ read in `coordinator.py`. Options apply without losing progress (the entry reloa
 
 ## Checking a change
 
-You need Python 3.13. The engine checks need nothing else; for the rest:
+You need Python 3.13 or newer (Home Assistant 2026.9 itself runs on 3.14, which is what the workflows use), and
+Node 20 or newer for the panel check. The engine checks need nothing else; for the rest:
 
 ```sh
 pip install -r tests/requirements.txt
@@ -62,13 +63,17 @@ pip install -r tests/requirements.txt
 | `python3 tests/test_integration.py` | seconds | any change outside `engine/` |
 | `python3 tests/test_engine_soak.py 30 1 2 3 4 5 6` | long (minutes per player and seed, on all cores) | any change to how the game plays |
 | `python3 tests/test_integration_soak.py 3 sdxl` and `python3 tests/test_integration_soak.py 3 flux_unet` | several minutes each | any change to painting, writing or the coordinator |
+| `python3 tests/test_release.py` | seconds | any change to `scripts/` or the release workflows |
+| `python3 scripts/build_package.py` | seconds | before a release: builds `dist/life_rpg.zip` and checks it installs |
 
 Any change to how the game plays (rules, rewards, content pools, the market) gets the full 30-year run before it
 ships: some problems (a list that grows forever, a number that overflows, a pool that runs dry) only show up
 after years of play. The run prints `30/30 runs finished cleanly` when all is well.
 
-GitHub Actions runs lint, the unit tests, a 3-year soak, the Home Assistant tests, `hassfest`
-on every push.
+Gitea's runner runs lint, the panel check, the unit tests, a 3-year soak, the Home Assistant tests (with
+half-year soaks), the release tests and the zip build on every push (`.gitea/workflows/test.yml`). On GitHub the same
+checks run plus Home Assistant's `hassfest` and the Marketplace's own checks, which come from GitHub and can only run
+there. [tests/README.md](tests/README.md) lists what each test checks.
 
 Code style: `ruff` settles formatting and import order (see `pyproject.toml`). Every function and class has a
 docstring, and comments say why, not what. In the panel, keep to plain JavaScript modules with no build step.
@@ -133,7 +138,10 @@ chore: update the CI actions
 
 ## Releasing
 
-1. Change the version in all four places (the unit tests fail if they disagree):
+Gitea is the main copy of this repository. It push-mirrors to GitHub, which is the public copy: the Marketplace
+installs from GitHub's releases, so every link in the docs and release notes points there.
+
+1. Change the version in all four places (the unit tests fail if they disagree, and so does the release):
    - `VERSION` in `custom_components/life_rpg/const.py`
    - `version` in `custom_components/life_rpg/manifest.json`
    - `const VERSION` in `custom_components/life_rpg/frontend/life-rpg.js`
@@ -141,11 +149,36 @@ chore: update the CI actions
 
    The version is part of the panel's element name and of every script URL. That is what makes browsers and the
    Home Assistant app load the new panel instead of one they kept in memory.
-2. Add the release to `CHANGELOG.md`.
+2. Add the release to the top of [CHANGELOG.md](CHANGELOG.md), under a heading `## X.Y.Z (date)` (move what's under
+   `## Unreleased` into it).
 3. Run the checks above, including the 30-year run if the game changed.
-4. Publish it: push the tag (`git tag vX.Y.Z && git push origin vX.Y.Z`), or open **Actions → Release → Run
-   workflow** and enter the version. The [Release workflow](.github/workflows/release.yml) checks the manifest
-   and `CHANGELOG.md` are at that version, then publishes the GitHub release the Marketplace installs from.
+4. Commit and push to Gitea, then publish with Gitea's **Release** workflow (`.gitea/workflows/release.yml`),
+   either way:
+   - **Actions → Release → Run workflow**, and enter the version without the `v` (for example `1.2.1`). It
+     creates the tag `v1.2.1` on the commit it releases.
+   - or push a version tag: `git tag v1.2.1 && git push origin v1.2.1`.
+
+   The workflow checks the version matches all four places and `CHANGELOG.md` (`scripts/release_notes.py`), runs
+   every check, builds `life_rpg.zip` and checks it installs as `custom_components/life_rpg/`
+   (`scripts/build_package.py`), and publishes the release on Gitea with the zip and notes: install steps, then that
+   version's changelog section (`scripts/publish_gitea_release.py`). A version with a suffix (`-beta`) is published
+   as a pre-release. If any check fails, nothing is published. Running it again for the same version updates the
+   release and replaces its zip.
+
+5. Gitea's push mirror then sends the commits and the new tag to GitHub, where the tag starts GitHub's own
+   **Release** workflow (`.github/workflows/release.yml`), which runs the same checks and publishes the same
+   release there. The Marketplace picks it up from GitHub. If GitHub is down, the mirror catches up later; the Gitea
+   release is already done.
+
+The Gitea workflows use no actions (`actions/checkout` and the like download from GitHub): each job runs in a plain
+image from Docker Hub (`python:3.14-bookworm`, and `node:20-bookworm` for the panel scripts) and fetches the code
+from Gitea with git, so testing and releasing keep working when GitHub can't be reached. Only the tests' packages
+(`tests/requirements.txt`) come from PyPI. When the runner's jobs can't reach Gitea at its public address (a runner
+on the same Docker network as Gitea, say), set an Actions variable `GITEA_INTERNAL_URL` to the address they can
+reach (`http://gitea-server:3000`); both workflows and the publish script use it.
+
+Keep every tag on Gitea: the push mirror makes GitHub's tags match Gitea's, so a tag missing from Gitea is deleted on
+GitHub, and the GitHub release on it turns into a draft.
 
 ## Reporting bugs
 
