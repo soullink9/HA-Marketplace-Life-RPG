@@ -147,10 +147,11 @@ class CharactersMixin:
         return gift
 
     def add_chat(self, who: str, role: str, text: str) -> None:
-        """Remember a line of conversation with Lune (kept) or the merchant (today only)."""
+        """Remember a line of conversation with Lune (kept, with when it was said) or the merchant (today only)."""
         text = " ".join(str(text or "").split())[:LORE_MAX]
         if who == "lune":
-            self.L["lune_chat"] = (self.L["lune_chat"] + [{"role": role, "text": text}])[-CHAT_MAX:]
+            line = {"role": role, "text": text, "at": self.now.isoformat(timespec="minutes")}
+            self.L["lune_chat"] = (self.L["lune_chat"] + [line])[-CHAT_MAX:]
             today = self.now.date().isoformat()
             if role == "user" and today not in self.L["lune_days"]:
                 self.L["lune_days"] = (self.L["lune_days"] + [today])[-400:]

@@ -1,6 +1,15 @@
 # Changelog
 
-## Unreleased
+## 1.3.0 (2026-11-15)
+
+### The goddess
+
+- She knows what time it is, and how long it's been since you last talked. Each message tells her the date and the
+  time of day, and when your last conversation was: a moment ago she carries on where you left off; after hours,
+  days or weeks she notices the gap and greets you like someone she hasn't seen for that long. The conversation she
+  remembers is marked where time passed between talks. This works the same with your own conversation agent, the AI
+  Task entity and through Assist. Lines said before this version have no time, so the first chat after updating
+  starts without one.
 
 ### Repository
 

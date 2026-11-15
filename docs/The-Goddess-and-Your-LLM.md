@@ -4,6 +4,7 @@ Optional: words from your own LLM (through Home Assistant's AI Task), conversati
 **Configure → Goddess** names her (your voice assistant's name, say) everywhere: panel, titles, blessings, notifications, paintings, conversations and Assist.
 - **Personality:** *a playful moon goddess* (built in), or *keep the model's own personality*, where the LLM is told only her name and her role in the game.
 - **Talk through this conversation agent:** pick your own assistant (for example your Ollama agent). Her chat replies then come from that agent, in its own voice, with the game's facts sent along with each message. The conversation carries on through the day. Without an agent, the AI Task entity writes her replies. Either way she's told to answer what you actually said, ask things back and not recite your stats.
+- **She knows what time it is:** each message tells her the date and time, and how long it's been since you last talked. Talk again a minute later and she carries on; come back the next evening or after a week away and she notices, and greets you like someone she hasn't seen for that long. Her memory of your chat shows where the days passed too.
 - **Her gifts:** now and then, while you're talking, she gives you something: a potion or charm, a blessed chest, a purse of gold or, rarely, a cosmetic. The game decides, never the LLM. There's at most one chance a day, and never two gifts within three weeks.
 
 ## Your LLM: the goddess, the merchant and the world

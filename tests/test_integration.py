@@ -8,7 +8,7 @@ Run: python3 tests/test_integration.py      (needs voluptuous and Pillow: pip in
 import asyncio
 import base64
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import json
 import os
 from pathlib import Path
@@ -926,6 +926,30 @@ async def main():
     r = await lcall("life_rpg_talk_to_goddess", message="Gift please", adventurer="Sam")
     assert "gift" not in r and lc.game.L["gold"] == gold0
     print("  work step, work entity, gifts through chat and Assist ok")
+    # --- the goddess knows how long it's been since you talked
+    from life_rpg import lore as LR
+
+    chat = lc.game.L["lune_chat"]
+    assert chat[-1]["at"] and chat[-2]["role"] == "user" and chat[-2]["at"], chat[-2:]
+    assert "You were just talking" in LLM_CALLS[-1][1], "a chat a moment ago carries on"
+    now = NOW[0]
+    for i, m in enumerate(chat):  # an older talk, then one 3 days ago
+        m["at"] = (now - timedelta(days=5 if i < len(chat) - 4 else 3)).isoformat(timespec="minutes")
+    await lc.async_chat("lune", "I'm back!")
+    prompt = LLM_CALLS[-1][1]
+    assert "You last talked 3 days ago" in prompt and "haven't seen for that long" in prompt, prompt
+    assert f"It is now {LR.clock(lc.game.now)}" in prompt and "(2 days later, " in prompt, prompt
+    assert [LR.elapsed(s) for s in (30, 600, 7200, 3 * 86400, 30 * 86400, 200 * 86400, 800 * 86400)] == [
+        "a few minutes",
+        "10 minutes",
+        "2 hours",
+        "3 days",
+        "4 weeks",
+        "7 months",
+        "2 years",
+    ]
+    assert "first time" in LR.time_note([], now, "Sam") and "don't know" in LR.time_note([{"text": "x"}], now, "Sam")
+    print("  the goddess knows the date, the time and how long since you last talked")
 
     # --- goddess step, fl oz, sensor guard and corrections
     gd = await opt.async_step_goddess({"goddess_name": "  Lena  ", "goddess_persona": "own"})

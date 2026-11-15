@@ -8,7 +8,7 @@ engine decides every number, price and reward, and the words are stored as flavo
 from __future__ import annotations
 
 import asyncio
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 import logging
 import re
 import time
@@ -130,6 +130,80 @@ def facts(v: dict[str, Any], name: str) -> str:
     return "\n".join(lines)
 
 
+def _at(line: dict[str, Any]) -> datetime | None:
+    """When a line of conversation was said (None for lines saved without a time)."""
+    try:
+        return datetime.fromisoformat(line["at"])
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+def _between(a: datetime, b: datetime) -> float:
+    """Seconds from a to b (wall-clock time if only one of them knows its time zone)."""
+    if (a.tzinfo is None) != (b.tzinfo is None):
+        a, b = a.replace(tzinfo=None), b.replace(tzinfo=None)
+    return (b - a).total_seconds()
+
+
+def elapsed(seconds: float) -> str:
+    """A rough, spoken length of time: "a few minutes", "3 hours", "2 days", "5 weeks", "4 months"."""
+    minutes = seconds / 60
+    if minutes < 5:
+        return "a few minutes"
+    units = [("minute", 1, 60), ("hour", 60, 48 * 60), ("day", 1440, 21 * 1440), ("week", 10080, 9 * 10080)]
+    units += [("month", 43830, 24 * 43830), ("year", 525960, float("inf"))]
+    unit, size = next((u, s) for u, s, limit in units if minutes < limit)
+    n = max(round(minutes / size), 1)
+    return f"{n} {unit}{'s' if n != 1 else ''}"
+
+
+def clock(t: datetime) -> str:
+    """A spoken date and time: "Sunday 15 November 2026, 1:39 PM (afternoon)"."""
+    part = (
+        "night"
+        if t.hour < 5 or t.hour >= 21
+        else "morning"
+        if t.hour < 12
+        else "afternoon"
+        if t.hour < 17
+        else "evening"
+    )
+    return f"{t:%A} {t.day} {t:%B} {t.year}, {t.hour % 12 or 12}:{t:%M} {'AM' if t.hour < 12 else 'PM'} ({part})"
+
+
+def time_note(chat: list[dict[str, Any]], now: datetime, name: str) -> str:
+    """What the goddess knows about time: the date and time now, and how long it's been since they last talked."""
+    note = f"It is now {clock(now)} for {name}."
+    last = next((t for t in (_at(m) for m in reversed(chat)) if t), None)
+    if last is None:
+        return note + (
+            " You don't know when you last talked." if chat else f" This is the first time {name} has talked to you."
+        )
+    gap = max(_between(last, now), 0)
+    note += f" You last talked {elapsed(gap)} ago, on {clock(last)}."
+    if gap < 2 * 3600:
+        return note + " You were just talking: carry on naturally, without greeting them again."
+    if gap < 20 * 3600:
+        return note + " Some hours have passed: notice it if it fits (a new part of the day, how their day went)."
+    return note + (
+        " Time has passed since then: greet them as someone you haven't seen for that long and react to the gap "
+        "(missing them, wondering what they've been up to, or teasing them for being away), and don't carry on as "
+        "if the last conversation just happened. Things they told you then may have changed since."
+    )
+
+
+def history_lines(chat: list[dict[str, Any]], name: str, goddess: str) -> str:
+    """The conversation so far, with a marker wherever time passed between lines (a new day, or hours later)."""
+    out, prev = [], None
+    for m in chat:
+        t = _at(m)
+        if t and prev and (_between(prev, t) >= 3 * 3600 or t.date() != prev.date()):
+            out.append(f"({elapsed(_between(prev, t))} later, {clock(t)})")
+        prev = t or prev
+        out.append(f"{name if m['role'] == 'user' else goddess}: {m['text']}")
+    return "\n".join(out)
+
+
 def mood_from_text(text: str) -> str:
     """The goddess's portrait for a reply that didn't say which mood it is."""
     t = text.lower()
@@ -204,7 +278,8 @@ class LoreWriter:
         voice is then that agent's), otherwise through the AI Task entity."""
         game, v = self.coordinator.game, self.coordinator.data
         chat = game.L["lune_chat"][-12:]
-        history = "\n".join(f"{self.name if m['role'] == 'user' else self.goddess}: {m['text']}" for m in chat)
+        history = history_lines(chat, self.name, self.goddess)
+        when = time_note(game.L["lune_chat"], game.now, self.name)
         openers = [" ".join(m["text"].split()[:4]) for m in chat if m["role"] != "user"][-4:]
         moods = list(LUNE_MOODS)
         gift = game.gift_offer()  # the game decides, once a day; nothing they say can change it
@@ -225,7 +300,7 @@ class LoreWriter:
         if self.coordinator.chat_agent:
             reply = await self._agent(
                 text,
-                f"{self.persona()} {TALK}{avoid}\nWhat you know about them (use only when "
+                f"{self.persona()} {TALK}{avoid}\nTime: {when}\nWhat you know about them (use only when "
                 f"relevant): {facts(v, self.name)}\nGifts: {gifting}\nRecent conversation:\n"
                 f"{history or '(none)'}",
             )
@@ -234,7 +309,7 @@ class LoreWriter:
             data = await self._generate(
                 self.goddess,
                 (
-                    f"{self.persona()}\n\n{TALK}{avoid}\n\nWhat you know about them (use only when relevant):\n"
+                    f"{self.persona()}\n\n{TALK}{avoid}\n\nTime: {when}\n\nWhat you know about them (use only when relevant):\n"
                     f"{facts(v, self.name)}\n\nGifts: {gifting}\n\nThe conversation so far:\n{history or '(this is the start)'}\n"
                     f"{self.name}: {text}\n\nWrite {self.goddess}'s next reply, and pick the mood that fits it from: "
                     f"{', '.join(moods)}."
