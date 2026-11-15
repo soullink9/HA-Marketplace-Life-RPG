@@ -4,8 +4,6 @@ the LLM writes: flavour text, chats, and the goddess's rare gifts.
 Part of the Game class (game.py), which mixes this in; `self` is that Game.
 """
 
-from __future__ import annotations
-
 from datetime import date
 import random
 from typing import Any

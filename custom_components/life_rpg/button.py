@@ -1,7 +1,5 @@
 """One-tap logging buttons (a glass of water, a flight of stairs) for dashboards, NFC tags and automations."""
 
-from __future__ import annotations
-
 from homeassistant.components.button import ButtonEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback

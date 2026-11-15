@@ -11,8 +11,6 @@ Every run checks, all the way through:
 - updates stay fast
 """
 
-from __future__ import annotations
-
 from datetime import date, datetime, timedelta
 import importlib
 import json

@@ -1,6 +1,6 @@
 Life RPG is a custom integration for Home Assistant. This page covers installing it, adding an adventurer and the options.
 
-**Needs:** Home Assistant 2026.9 or newer. Optional: [ComfyUI](https://github.com/comfyanonymous/ComfyUI) for paintings, and an LLM integration with an AI Task entity (Ollama, for example) for the goddess's and the merchant's words.
+**Needs:** Home Assistant 2026.11 or newer. Optional: [ComfyUI](https://github.com/comfyanonymous/ComfyUI) for paintings, and an LLM integration with an AI Task entity (Ollama, for example) for the goddess's and the merchant's words.
 
 ## From the Marketplace
 

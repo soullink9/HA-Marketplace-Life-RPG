@@ -1,7 +1,5 @@
 """Life RPG sensors, for automations and plain dashboards (the System panel shows everything)."""
 
-from __future__ import annotations
-
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any

@@ -4,8 +4,6 @@ impossible sensor jumps, corrections, and quests (water, stairs, sleep) logged b
 Part of the Game class (game.py), which mixes this in; `self` is that Game.
 """
 
-from __future__ import annotations
-
 from datetime import datetime, timedelta
 from typing import Any
 

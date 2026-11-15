@@ -3,8 +3,6 @@ shape of a new save file, and small helpers. Everything here is pure, with no st
 applies it to one adventurer.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 import math

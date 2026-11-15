@@ -5,8 +5,6 @@ life_rpg.correct    set today's real count for steps, floors or water, and/or th
 life_rpg.log_sleep  last night's sleep: bedtime and wake-up ("22:30" / "06:45" or full date-times); bedtime alone = Lights out only
 """
 
-from __future__ import annotations
-
 from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, SupportsResponse
 from homeassistant.exceptions import HomeAssistantError, Unauthorized
 import voluptuous as vol

@@ -33,7 +33,7 @@ Everything lives in a full-screen **System** panel in the sidebar. Each logged-i
 
 ## Install
 
-**Needs:** Home Assistant 2026.9 or newer. Optional: [ComfyUI](https://github.com/comfyanonymous/ComfyUI) for paintings, and an LLM integration with an AI Task entity (Ollama, for example) for the goddess's and the merchant's words.
+**Needs:** Home Assistant 2026.11 or newer. Optional: [ComfyUI](https://github.com/comfyanonymous/ComfyUI) for paintings, and an LLM integration with an AI Task entity (Ollama, for example) for the goddess's and the merchant's words.
 
 1. **Download.** Install **Life RPG** from the Marketplace (**Settings → Marketplace**, Home Assistant 2026.11 and newer), or copy the [`custom_components/life_rpg`](custom_components/life_rpg) folder into `/config/custom_components/` and restart Home Assistant.
 2. **Add an adventurer.** Press the button above, or go to **Settings → Devices & services → Add integration → Life RPG**. Each entry is one adventurer: pick a name, the Home Assistant user who plays, a race, and the sensors and goals for each quest.

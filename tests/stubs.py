@@ -203,6 +203,14 @@ def as_local(d):
 
 
 util = mod("homeassistant.util", slugify=lambda t: t.lower().replace(" ", "_"))
+
+
+class HassKey(str):
+    def __class_getitem__(cls, _item):
+        return cls
+
+
+util.hass_dict = mod("homeassistant.util.hass_dict", HassKey=HassKey)
 util.dt = mod("homeassistant.util.dt", now=lambda: NOW[0], as_local=as_local, parse_datetime=parse_datetime)
 
 
@@ -241,6 +249,11 @@ class EventEntity:
 
     def async_write_ha_state(self):
         pass
+
+    def async_entity_id_changed(self, old_entity_id):
+        EventEntity.renamed.append((old_entity_id, self.entity_id))
+
+    renamed = []
 
 
 mod("homeassistant.components.event", EventEntity=EventEntity)

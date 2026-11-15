@@ -5,8 +5,6 @@ level so the market stays relevant for years. Potions are limited per week and t
 modest, so the shop speeds you up a little but never replaces doing the quests.
 """
 
-from __future__ import annotations
-
 import random
 from typing import Any
 

@@ -43,7 +43,7 @@ async def main():
     art.POLL, art.MAX_FILES = 0.001, 60
     hass = H.hass_factory()
     assert await life_rpg.async_setup(hass, {})
-    studio = hass.data["life_rpg"]["studio"]
+    studio = hass.data["life_rpg"]
     options = {
         "user_id": "u1",
         "race": "beastkin",

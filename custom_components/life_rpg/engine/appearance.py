@@ -4,8 +4,6 @@ Traits are decided here (not in the browser) so the pixel fallback and the paint
 the view carries palette indices that art.js uses, and the same traits are written into prompts.
 """
 
-from __future__ import annotations
-
 import hashlib
 import random
 from typing import Any

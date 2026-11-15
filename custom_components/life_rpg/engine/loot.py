@@ -1,7 +1,5 @@
 """Chests, gear and the effect totals that gear, titles, gifts and blessings add up to."""
 
-from __future__ import annotations
-
 import random
 from typing import Any
 

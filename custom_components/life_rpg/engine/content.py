@@ -12,8 +12,6 @@ Effects are small dicts the engine adds up, e.g. {"xp:steps": 10, "boss": 5}:
   serenity   Penalty Quests only ask you to clear the day
 """
 
-from __future__ import annotations
-
 ATTR_SHORT = {"stamina": "STA", "strength": "STR", "vitality": "VIT", "intelligence": "INT", "wisdom": "WIS"}
 QUEST_NAMES = {"steps": "Walk", "floors": "Climb", "sleep": "Rest", "hydration": "Drink water", "bedtime": "Lights out"}
 QUEST_ATTR = {

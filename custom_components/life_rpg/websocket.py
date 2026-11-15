@@ -5,8 +5,6 @@ life_rpg/subscribe  live game view for one adventurer (anyone may watch)
 life_rpg/action     open chests, equip gear, pick a title... (own adventurer, or admins)
 """
 
-from __future__ import annotations
-
 from typing import Any
 
 from homeassistant.components import websocket_api

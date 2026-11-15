@@ -1,7 +1,5 @@
 """Life RPG: Health Connect sensors become a role-playing game, with its own System panel."""
 
-from __future__ import annotations
-
 from pathlib import Path
 
 from homeassistant.components import panel_custom
@@ -15,7 +13,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.helpers.typing import ConfigType
 
 from . import services, websocket
-from .art import Studio
+from .art import STUDIO, Studio
 from .const import ART_URL, DOMAIN, PANEL_PATH, URL_BASE, VERSION
 from .coordinator import LifeRPGCoordinator
 from .llm_api import LifeRPGAPI
@@ -29,7 +27,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Serve the game UI (System panel, cards, paintings), start the art studio, offer tools to Assist."""
     studio = Studio(hass)
     await studio.async_load()
-    hass.data[DOMAIN] = {"studio": studio}
+    hass.data[STUDIO] = studio
 
     async def _stop(_event: Event) -> None:
         """Stop the painter cleanly when Home Assistant shuts down."""

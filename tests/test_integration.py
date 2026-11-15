@@ -20,7 +20,7 @@ import types
 sys.path.insert(0, str(Path(__file__).parent))  # for stubs.py
 
 from stubs import *  # noqa: F403,E402
-from stubs import NOW, REGISTERED, TZ, WS, ConfigEntry, Conn, HomeAssistant, State, Users, mod, sel  # noqa: E402
+from stubs import NOW, REGISTERED, TZ, WS, ConfigEntry, Conn, EventEntity, HomeAssistant, State, Users, mod, sel  # noqa: E402
 
 TMP = Path(tempfile.mkdtemp())
 H_NOW_REF = NOW
@@ -72,10 +72,27 @@ class ToolInput:
     tool_args: dict
 
 
+@dataclass(frozen=True, kw_only=True)
+class ToolAnnotations:
+    read_only: bool = False
+    destructive: bool = True
+    idempotent: bool = False
+    open_world: bool = True
+
+
+@dataclass(slots=True)
+class ToolResult:
+    data: dict
+    error: bool = False
+
+
 class Tool:
     name = ""
+    title = None
     description = None
     parameters = None
+    annotations = ToolAnnotations()
+    integration = None
 
 
 @dataclass
@@ -95,9 +112,22 @@ class API:
 
 
 APIS = {}
+
+
+async def use_tool(tool, hass, tool_input, ctx):
+    """Call an Assist tool the way Home Assistant does, and return its data."""
+    res = await tool.async_call(hass, tool_input, ctx)
+    assert isinstance(res, ToolResult) and isinstance(res.data, dict), res
+    assert tool.title and tool.integration == "life_rpg" and isinstance(tool.annotations, ToolAnnotations), tool
+    assert res.error == (res.data.get("success") is False), res
+    return res.data
+
+
 llm_mod = mod(
     "homeassistant.helpers.llm",
     Tool=Tool,
+    ToolAnnotations=ToolAnnotations,
+    ToolResult=ToolResult,
     API=API,
     APIInstance=APIInstance,
     LLMContext=LLMContext,
@@ -498,7 +528,7 @@ async def main():
     art.POLL = 0.01
     hass = hass_factory()
     assert await life_rpg.async_setup(hass, {})
-    studio = hass.data["life_rpg"]["studio"]
+    studio = hass.data["life_rpg"]
     assert {c[0][0] for c in REGISTERED["static"]} == {"/life_rpg_static", "/life_rpg_art"}
     assert "ws_chat" in WS and "life_rpg" in APIS
 
@@ -762,7 +792,7 @@ async def main():
     ctx = LLMContext("ollama", types.SimpleNamespace(user_id="u1"), "en", "conversation", None)
     inst = await api.async_get_api_instance(ctx)
     tools = {t.name: t for t in inst.tools}
-    call = lambda name, ctx=ctx, **a: tools[name].async_call(hass, ToolInput(name, a), ctx)  # noqa: E731
+    call = lambda name, ctx=ctx, **a: use_tool(tools[name], hass, ToolInput(name, a), ctx)  # noqa: E731
     st = await call("life_rpg_status")
     json.dumps(st)
     assert st["adventurer"] == "Kai" and "guardian" in st and st["gold"] >= 0
@@ -794,6 +824,11 @@ async def main():
         await e.async_added_to_hass()
         if isinstance(e, sensor_mod.RPGSensor):
             json.dumps([e.native_value, e.extra_state_attributes])
+    # the achievements entity is renamed in place (Home Assistant 2026.11), not removed and added again
+    ach = next(e for e in ents if isinstance(e, event_mod.Achievements))
+    ach.entity_id = "event.kai_trophies"
+    ach.async_entity_id_changed("event.kai_achievements")
+    assert ("event.kai_achievements", "event.kai_trophies") in EventEntity.renamed
     gold = next(e for e in ents if getattr(e, "_attr_translation_key", "") == "gold")
     print("  sensor gold:", gold.native_value, gold.extra_state_attributes)
     json.dumps(c.data)
@@ -865,7 +900,7 @@ async def main():
     lctx = LLMContext("ollama", types.SimpleNamespace(user_id="u1"), "en", "conversation", None)
     linst = await APIS["life_rpg"].async_get_api_instance(lctx)
     ltools = {t.name: t for t in linst.tools}
-    lcall = lambda name, **a: ltools[name].async_call(hass, ToolInput(name, a), lctx)  # noqa: E731
+    lcall = lambda name, **a: use_tool(ltools[name], hass, ToolInput(name, a), lctx)  # noqa: E731
     r = await lcall("life_rpg_log", quest="water", amount=-250, adventurer="Sam")
     assert r["today_total"] == 1750 and not lc.data["quests"]["hydration"]["done"], r
     r = await lcall("life_rpg_status", adventurer="Sam")
@@ -1006,12 +1041,18 @@ async def main():
     octx = LLMContext("ollama", types.SimpleNamespace(user_id="u1"), "en", "conversation", None)
     oinst = await APIS["life_rpg"].async_get_api_instance(octx)
     otools = {t.name: t for t in oinst.tools}
-    r = await otools["life_rpg_fix_count"].async_call(
-        hass, ToolInput("life_rpg_fix_count", {"quest": "water", "today": 40, "adventurer": "Oz"}), octx
+    r = await use_tool(
+        otools["life_rpg_fix_count"],
+        hass,
+        ToolInput("life_rpg_fix_count", {"quest": "water", "today": 40, "adventurer": "Oz"}),
+        octx,
     )
     assert r["today"] == 40 and r["unit"] == "fl oz", r
-    r = await otools["life_rpg_log"].async_call(
-        hass, ToolInput("life_rpg_log", {"quest": "water", "amount": 8, "adventurer": "Oz"}), octx
+    r = await use_tool(
+        otools["life_rpg_log"],
+        hass,
+        ToolInput("life_rpg_log", {"quest": "water", "amount": 8, "adventurer": "Oz"}),
+        octx,
     )
     assert r["unit"] == "fl oz" and r["today_total"] == 16, r
     fx_entry = ConfigEntry({**FLUX_UNET_OPTIONS, "paint": ["portrait"], "art_style": "painted"}, title="Fx")
@@ -1278,17 +1319,23 @@ async def main():
     kid_entry.runtime_data = kid
     kctx = LLMContext("ollama", types.SimpleNamespace(user_id="u1"), "en", "conversation", None)
     ktools = {t.name: t for t in (await APIS["life_rpg"].async_get_api_instance(kctx)).tools}
-    board = await ktools["life_rpg_bounties"].async_call(
-        hass, ToolInput("life_rpg_bounties", {"adventurer": "Kid"}), kctx
+    board = await use_tool(
+        ktools["life_rpg_bounties"], hass, ToolInput("life_rpg_bounties", {"adventurer": "Kid"}), kctx
     )
     open_one = next(b for b in board["board"] if b["state"] == "open")
     said = " ".join(sorted(open_one["title"].lower().split(), key=len)[-2:])  # its two longest words
-    r = await ktools["life_rpg_bounties"].async_call(
-        hass, ToolInput("life_rpg_bounties", {"adventurer": "Kid", "done": f"I did {said}"}), kctx
+    r = await use_tool(
+        ktools["life_rpg_bounties"],
+        hass,
+        ToolInput("life_rpg_bounties", {"adventurer": "Kid", "done": f"I did {said}"}),
+        kctx,
     )
     assert r.get("result") in ("done", "claimed"), (r, said)
-    r = await ktools["life_rpg_bounties"].async_call(
-        hass, ToolInput("life_rpg_bounties", {"adventurer": "Kid", "done": "zzz qqq"}), kctx
+    r = await use_tool(
+        ktools["life_rpg_bounties"],
+        hass,
+        ToolInput("life_rpg_bounties", {"adventurer": "Kid", "done": "zzz qqq"}),
+        kctx,
     )
     assert r["success"] is False
     # portrait choices

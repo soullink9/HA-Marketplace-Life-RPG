@@ -1,7 +1,5 @@
 """Life RPG achievements: one event entity per player (level ups, quests, bosses...)."""
 
-from __future__ import annotations
-
 from homeassistant.components.event import EventEntity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
@@ -33,6 +31,11 @@ class Achievements(CoordinatorEntity[LifeRPGCoordinator], EventEntity):
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_achievements"
         self._attr_device_info = player_device(coordinator)
+
+    @callback
+    def async_entity_id_changed(self, old_entity_id: str) -> None:
+        """Keep the entity when it's renamed (nothing here depends on its entity_id)."""
+        super().async_entity_id_changed(old_entity_id)
 
     async def async_added_to_hass(self) -> None:
         """Deliver anything earned during setup."""

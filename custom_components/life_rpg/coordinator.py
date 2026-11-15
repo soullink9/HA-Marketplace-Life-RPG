@@ -1,7 +1,5 @@
 """Reads the health sensors and runs the game for one player."""
 
-from __future__ import annotations
-
 from datetime import date, datetime, time as time_, timedelta
 import logging
 from typing import Any
@@ -15,7 +13,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 
-from .art import Studio, art_key
+from .art import STUDIO, Studio, art_key
 from .const import (
     CONF_AI_TASK,
     CONF_ART_STYLE,
@@ -75,7 +73,7 @@ def _time(raw: Any) -> datetime | None:
     """Parse a timestamp attribute (Health Connect sends ISO instants)."""
     try:
         return dt_util.as_local(dt_util.parse_datetime(str(raw))) if raw else None
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return None
 
 
@@ -149,7 +147,7 @@ class LifeRPGCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             daily_bounties=self.daily_bounties,
         )
         self.store: Store[dict[str, Any]] = Store(hass, 1, f"{DOMAIN}.{entry.entry_id}")
-        self.studio: Studio = hass.data[DOMAIN]["studio"]
+        self.studio: Studio = hass.data[STUDIO]
         url, family = (o.get(CONF_COMFY_URL) or "").strip(), o.get(CONF_FAMILY, "sdxl")
         parts = {k: o.get(key) for k, key in FLUX_PARTS.items()}
         self.art_cfg = (

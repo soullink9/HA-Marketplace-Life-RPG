@@ -17,8 +17,6 @@ Content (names, lines, numbers) lives in content.py, loot in loot.py, market rul
 everything about looks and painting prompts in appearance.py.
 """
 
-from __future__ import annotations
-
 from datetime import date, datetime, timedelta
 import math
 import random

@@ -4,8 +4,6 @@ and approves.
 Part of the Game class (game.py), which mixes this in; `self` is that Game.
 """
 
-from __future__ import annotations
-
 from datetime import date
 from typing import Any
 

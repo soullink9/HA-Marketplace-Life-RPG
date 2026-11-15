@@ -7,7 +7,7 @@ body:
     attributes:
       label: Versions
       description: Home Assistant (Settings → About) and Life RPG (the version is on any adventurer's device page).
-      placeholder: Home Assistant 2026.9.4, Life RPG 1.2.0
+      placeholder: Home Assistant 2026.11.1, Life RPG 1.4.0
     validations:
       required: true
   - type: textarea

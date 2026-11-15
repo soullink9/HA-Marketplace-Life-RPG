@@ -10,8 +10,6 @@ merchant get one base painting each, and every mood, outfit and backdrop is an e
 their faces stay the same from picture to picture.
 """
 
-from __future__ import annotations
-
 import asyncio
 from collections.abc import Callable
 import contextlib
@@ -28,6 +26,7 @@ import aiohttp
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.storage import Store
+from homeassistant.util.hass_dict import HassKey
 
 from .const import ART_URL, DOMAIN
 
@@ -261,7 +260,7 @@ async def _node_files(hass: HomeAssistant, url: str, node: str, field: str) -> l
             f"{url.rstrip('/')}/object_info/{node}", timeout=aiohttp.ClientTimeout(total=8)
         ) as resp:
             info = await resp.json(content_type=None)
-    except (aiohttp.ClientError, TimeoutError, ValueError):
+    except aiohttp.ClientError, TimeoutError, ValueError:
         return None
     if not isinstance(info, dict):
         return None
@@ -715,6 +714,9 @@ class Studio:
             listener()
 
 
+STUDIO: HassKey[Studio] = HassKey(DOMAIN)  # the one studio all adventurers share, in hass.data
+
+
 def as_png(data: bytes) -> bytes:
     """A painting as PNG (what every ComfyUI build can load)."""
     if data.startswith(b"\x89PNG"):
@@ -737,7 +739,7 @@ def shrink(data: bytes) -> tuple[bytes, str]:
         with Image.open(io.BytesIO(data)) as im:
             out = io.BytesIO()
             im.convert("RGB").save(out, "WEBP", quality=WEBP_QUALITY, method=4)
-    except (OSError, ValueError):
+    except OSError, ValueError:
         return data, "png"
     webp = out.getvalue()
     return (webp, "webp") if webp.startswith(b"RIFF") and len(webp) < len(data) else (data, "png")

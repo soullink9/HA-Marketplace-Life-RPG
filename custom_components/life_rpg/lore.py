@@ -5,8 +5,6 @@ that offers an AI Task entity works (Ollama included). The LLM only ever writes 
 engine decides every number, price and reward, and the words are stored as flavour.
 """
 
-from __future__ import annotations
-
 import asyncio
 from datetime import date, datetime, timedelta
 import logging
@@ -14,6 +12,7 @@ import re
 import time
 from typing import TYPE_CHECKING, Any
 
+from homeassistant.components import ai_task
 from homeassistant.core import Context, HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 import voluptuous as vol
@@ -134,7 +133,7 @@ def _at(line: dict[str, Any]) -> datetime | None:
     """When a line of conversation was said (None for lines saved without a time)."""
     try:
         return datetime.fromisoformat(line["at"])
-    except (KeyError, TypeError, ValueError):
+    except KeyError, TypeError, ValueError:
         return None
 
 
@@ -251,10 +250,6 @@ class LoreWriter:
 
     async def _generate(self, task: str, instructions: str, structure: dict[str, Any] | None = None) -> Any:
         """One AI Task call; None if no LLM is available or it fails."""
-        try:
-            from homeassistant.components import ai_task  # noqa: PLC0415 - optional dependency
-        except ImportError:
-            return None
         if self.goddess != GODDESS:  # never let the default name slip into a prompt
             instructions = instructions.replace(GODDESS, self.goddess)
         schema = vol.Schema(structure or {vol.Required("text", description="The text to show."): str})

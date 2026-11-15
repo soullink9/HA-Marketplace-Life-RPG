@@ -1,7 +1,5 @@
 """UI setup for Life RPG: one entry per adventurer."""
 
-from __future__ import annotations
-
 from pathlib import Path
 from typing import Any
 

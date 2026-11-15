@@ -4,8 +4,6 @@ what you bought (potions, tonics, charms, crates, cosmetics). The haggling rules
 Part of the Game class (game.py), which mixes this in; `self` is that Game.
 """
 
-from __future__ import annotations
-
 from datetime import date, datetime, timedelta
 from typing import Any
 

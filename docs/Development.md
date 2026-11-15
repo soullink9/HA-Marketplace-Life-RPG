@@ -1,7 +1,7 @@
 For anyone changing the code. [CONTRIBUTING.md](../CONTRIBUTING.md) has the rules the code keeps and how to release.
 
 ## Testing
-Everything runs with plain Python 3.13; nothing needs a real Home Assistant, ComfyUI or LLM.
+Everything runs with plain Python 3.14 (what Home Assistant 2026.11 runs on); nothing needs a real Home Assistant, ComfyUI or LLM.
 
 | Command | What it checks |
 |---|---|

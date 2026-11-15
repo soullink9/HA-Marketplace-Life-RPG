@@ -48,7 +48,7 @@ read in `coordinator.py`. Options apply without losing progress (the entry reloa
 
 ## Checking a change
 
-You need Python 3.13 or newer (Home Assistant 2026.9 itself runs on 3.14, which is what the workflows use), and
+You need Python 3.14, the same as Home Assistant 2026.11 (the integration supports nothing older), and
 Node 20 or newer for the panel check. The engine checks need nothing else; for the rest:
 
 ```sh

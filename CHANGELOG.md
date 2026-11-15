@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.4.0 (2026-11-15)
+
+**Needs Home Assistant 2026.11 or newer.** The Marketplace only offers this version on 2026.11 and later; older
+Home Assistant keeps 1.3.0.
+
+- Built for Home Assistant 2026.11 alone: the code that kept older versions working is gone, and it runs on
+  Python 3.14 like Home Assistant does.
+- Assist tools follow Home Assistant's new tool format: each has a title, says which integration it comes from, and
+  says what it does (looking things up, changing the game, or selling items for good), so conversation agents and
+  tool approvals can tell them apart. A tool that fails now says so plainly instead of answering as if it worked.
+- Renaming the achievements entity keeps it in place instead of removing it and adding it again.
+
 ## 1.3.0 (2026-11-15)
 
 ### The goddess

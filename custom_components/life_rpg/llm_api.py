@@ -5,8 +5,6 @@ tick "Life RPG" alongside "Assist"). The tools act for the adventurer linked to 
 voice satellites without a signed-in user act for the only adventurer, or the one you name.
 """
 
-from __future__ import annotations
-
 from typing import Any
 
 from homeassistant.core import HomeAssistant
@@ -97,21 +95,30 @@ def _stock(v: dict[str, Any]) -> list[dict[str, Any]]:
     return out
 
 
+# What each kind of tool does, for the conversation agent and the user's tool approvals: nothing here reaches
+# outside Home Assistant (the goddess and the merchant answer through the user's own AI Task or agent).
+READS = llm.ToolAnnotations(read_only=True, destructive=False, idempotent=True, open_world=False)
+ACTS = llm.ToolAnnotations(read_only=False, destructive=False, idempotent=False, open_world=False)
+REMOVES = llm.ToolAnnotations(read_only=False, destructive=True, idempotent=False, open_world=False)
+
+
 class _Tool(llm.Tool):
     """Base class for the tools: picks the adventurer, checks permission and turns game errors into answers."""
 
-    act = False
+    integration = DOMAIN
+    annotations = READS  # tools that change the game set ACTS (or REMOVES), and only their adventurer may use them
 
     async def async_call(
         self, hass: HomeAssistant, tool_input: llm.ToolInput, llm_context: llm.LLMContext
-    ) -> JsonObjectType:
+    ) -> llm.ToolResult:
         """Called by Home Assistant: find the adventurer, then run the tool."""
         args = dict(tool_input.tool_args)
-        coord = await _pick(hass, llm_context, args.pop("adventurer", None), self.act)
+        coord = await _pick(hass, llm_context, args.pop("adventurer", None), not self.annotations.read_only)
         try:
-            return await self.run(coord, **args)
+            data = await self.run(coord, **args)
         except GameError as err:
-            return {"success": False, "error": str(err)}
+            data = {"success": False, "error": str(err)}
+        return llm.ToolResult(data=data, error=data.get("success") is False)
 
     async def run(self, coord: Any, **args: Any) -> JsonObjectType:
         """The tool's work; each tool overrides this."""
@@ -122,6 +129,7 @@ class Status(_Tool):
     """Tool: the adventurer's status."""
 
     name = "life_rpg_status"
+    title = "Adventurer status"
     description = (
         "The adventurer's level, rank, streak, today's quests, labyrinth guardian, daily choice, chests and gold."
     )
@@ -173,11 +181,12 @@ class AnswerChoice(_Tool):
     """Tool: accept or decline the daily choice."""
 
     name = "life_rpg_answer_choice"
+    title = "Answer the daily choice"
     description = "Accept or decline today's daily choice."
     parameters = vol.Schema(
         {vol.Required("accept", description="true to accept, false to decline"): bool, ADVENTURER: str}
     )
-    act = True
+    annotations = ACTS
 
     async def run(self, coord: Any, accept: bool) -> JsonObjectType:
         """Answer the choice."""
@@ -189,9 +198,10 @@ class OpenChests(_Tool):
     """Tool: open every chest."""
 
     name = "life_rpg_open_chests"
+    title = "Open chests"
     description = "Open every waiting chest and say what was inside."
     parameters = vol.Schema({ADVENTURER: str})
-    act = True
+    annotations = ACTS
 
     async def run(self, coord: Any) -> JsonObjectType:
         """Open the chests and list the finds."""
@@ -203,6 +213,7 @@ class Inventory(_Tool):
     """Tool: list gear and consumables."""
 
     name = "life_rpg_inventory"
+    title = "Show the inventory"
     description = "List gear (equipped and spare) with sale values, plus consumables in the bag."
     parameters = vol.Schema({ADVENTURER: str})
 
@@ -231,9 +242,10 @@ class Equip(_Tool):
     """Tool: equip a piece of gear."""
 
     name = "life_rpg_equip"
+    title = "Equip gear"
     description = "Equip a piece of gear by name or id."
     parameters = vol.Schema({vol.Required("item", description="Item name or id"): str, ADVENTURER: str})
-    act = True
+    annotations = ACTS
 
     async def run(self, coord: Any, item: str) -> JsonObjectType:
         """Equip the matching item."""
@@ -246,9 +258,10 @@ class Sell(_Tool):
     """Tool: sell spare gear."""
 
     name = "life_rpg_sell"
+    title = "Sell items"
     description = "Sell a spare (unequipped) item to the merchant for gold. Use item 'junk' to sell all common spares."
     parameters = vol.Schema({vol.Required("item", description="Item name or id, or 'junk'"): str, ADVENTURER: str})
-    act = True
+    annotations = REMOVES
 
     async def run(self, coord: Any, item: str) -> JsonObjectType:
         """Sell the matching item, or every common spare for 'junk'."""
@@ -268,6 +281,7 @@ class Shop(_Tool):
     """Tool: show the market."""
 
     name = "life_rpg_shop"
+    title = "Show the market"
     description = "What the merchant Marrow Fennick is selling today, with prices."
     parameters = vol.Schema({ADVENTURER: str})
 
@@ -288,9 +302,10 @@ class Buy(_Tool):
     """Tool: buy from the market."""
 
     name = "life_rpg_buy"
+    title = "Buy from the market"
     description = "Buy something from today's market at its current price."
     parameters = vol.Schema({vol.Required("item", description="Name or id from the shop list"): str, ADVENTURER: str})
-    act = True
+    annotations = ACTS
 
     async def run(self, coord: Any, item: str) -> JsonObjectType:
         """Buy the matching item."""
@@ -303,6 +318,7 @@ class Haggle(_Tool):
     """Tool: haggle or walk away."""
 
     name = "life_rpg_haggle"
+    title = "Haggle with the merchant"
     description = (
         "Haggle with the merchant over an item in today's market: offer a price (he accepts, counters, holds "
         "firm or takes offence at a lowball; raising the offer a little each round works best), or walk away "
@@ -316,7 +332,7 @@ class Haggle(_Tool):
             ADVENTURER: str,
         }
     )
-    act = True
+    annotations = ACTS
 
     async def run(self, coord: Any, item: str, offer: int | None = None, walk_away: bool = False) -> JsonObjectType:
         """Make the offer, or walk away."""
@@ -332,9 +348,10 @@ class UseItem(_Tool):
     """Tool: use a consumable."""
 
     name = "life_rpg_use"
+    title = "Use an item"
     description = "Use a consumable from the bag (elixir, charm, scroll, feather...)."
     parameters = vol.Schema({vol.Required("item", description="Consumable name or id"): str, ADVENTURER: str})
-    act = True
+    annotations = ACTS
 
     async def run(self, coord: Any, item: str) -> JsonObjectType:
         """Use the matching consumable."""
@@ -348,6 +365,7 @@ class LogQuest(_Tool):
     """Tool: log water or stairs by hand."""
 
     name = "life_rpg_log"
+    title = "Log water or stairs"
     description = (
         "Log water drunk (in the adventurer's water unit: mL or fl oz) or flights of stairs climbed toward "
         "today's quest. Negative amounts undo."
@@ -361,7 +379,7 @@ class LogQuest(_Tool):
             ADVENTURER: str,
         }
     )
-    act = True
+    annotations = ACTS
 
     async def run(self, coord: Any, quest: str, amount: float) -> JsonObjectType:
         """Log the amount."""
@@ -380,6 +398,7 @@ class FixCount(_Tool):
     """Tool: fix a wrong count."""
 
     name = "life_rpg_fix_count"
+    title = "Fix a quest count"
     description = (
         "Set today's real count for steps, floors or water when the sensor got it wrong (for example two "
         "apps counting the same steps). Water is in the adventurer's water unit."
@@ -391,7 +410,7 @@ class FixCount(_Tool):
             ADVENTURER: str,
         }
     )
-    act = True
+    annotations = ACTS
 
     async def run(self, coord: Any, quest: str, today: float) -> JsonObjectType:
         """Set today's real count."""
@@ -409,6 +428,7 @@ class Bounties(_Tool):
     """Tool: the bounty board, and marking a bounty done."""
 
     name = "life_rpg_bounties"
+    title = "Bounty board"
     description = (
         "The bounty board: today's side quests and chores. Pass `done` with the task they say they finished "
         "to mark it done (chores in kids mode then wait for a parent's approval)."
@@ -416,7 +436,7 @@ class Bounties(_Tool):
     parameters = vol.Schema(
         {vol.Optional("done", description="The bounty they finished, in their words"): str, ADVENTURER: str}
     )
-    act = True
+    annotations = ACTS
 
     async def run(self, coord: Any, done: str | None = None) -> JsonObjectType:
         """Mark the best-matching open bounty done (if `done` is given), then list the board."""
@@ -456,6 +476,7 @@ class LogSleep(_Tool):
     """Tool: log last night's sleep."""
 
     name = "life_rpg_log_sleep"
+    title = "Log sleep"
     description = (
         "Log last night's sleep from bedtime and wake-up time (24-hour HH:MM). Without a wake-up time only the "
         "bedtime (Lights out quest) is logged."
@@ -467,7 +488,7 @@ class LogSleep(_Tool):
             ADVENTURER: str,
         }
     )
-    act = True
+    annotations = ACTS
 
     async def run(self, coord: Any, bedtime: str, wake: str | None = None) -> JsonObjectType:
         """Log bedtime and, if given, wake-up time."""
@@ -485,9 +506,10 @@ class TalkToGoddess(_Tool):
     """Tool: talk to the goddess."""
 
     name = "life_rpg_talk_to_goddess"
+    title = "Talk to the goddess"
     description = "Pass a message to the user's goddess and get her reply (read it out in her words)."
     parameters = vol.Schema({vol.Required("message"): str, ADVENTURER: str})
-    act = True
+    annotations = ACTS
 
     async def run(self, coord: Any, message: str) -> JsonObjectType:
         """Pass the message on and return her reply (and any gift)."""
