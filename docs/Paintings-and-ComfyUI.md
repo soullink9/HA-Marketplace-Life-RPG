@@ -55,6 +55,6 @@ Paintings are kept at 704 × 1024 (base paintings at 768 × 1152), so even a clo
 
 **Sharing the GPU with Ollama:** both want video memory. If paintings wait while your Ollama model is loaded, shorten Ollama's keep-alive so it unloads sooner, or start ComfyUI with `--lowvram`.
 
-**Keeping the folder small:** paintings are saved as WebP in `/config/life_rpg/art/`. A repaint or a new portrait replaces its file. The folder is capped at 1 GB and 1,500 pictures; past that, the least recently shown go first. The built-in workflows use ComfyUI's preview output, so ComfyUI's own `output` folder doesn't fill up. Base paintings sent for editing go to ComfyUI's `input/life_rpg` folder and are overwritten, not added to.
+**Keeping the folder small:** paintings are saved as WebP in `/config/life_rpg/art/`. A repaint or a new portrait replaces its file. The folder is capped at 1 GB and 1,500 pictures; past that, the least recently shown go first. Paintings of gear you no longer have (sold, or goods the market took away) are deleted once they haven't been shown for a week. The built-in workflows use ComfyUI's preview output, so ComfyUI's own `output` folder doesn't fill up. Base paintings sent for editing go to ComfyUI's `input/life_rpg` folder and are overwritten, not added to.
 
 Jobs run one at a time. If ComfyUI is offline the queue waits; if a painting fails, the error shows in the log and that picture is tried again after six hours.

@@ -38,6 +38,7 @@ HARD_TOTAL = MAX_TOTAL * 3 // 2  # past this even recently shown paintings go (o
 WEBP_QUALITY = 88  # paintings are kept as WebP (a fraction of the PNG's size); PNG if Pillow isn't there
 MAX_BYTES = 32 * 1024 * 1024  # a single painting may not be larger than this
 KEEP_RECENT = 3 * 24 * 3600  # paintings shown in the last three days are never pruned
+ITEM_RETENTION = 7 * 24 * 3600  # an item not shown for a week of play (sold gear, goods the market took away) goes
 STALE_JOB = 24 * 3600  # queued paintings nobody has asked for in a day are dropped (sold items, old portraits)
 IMAGE_MAGIC = (b"\x89PNG\r\n\x1a\n", b"\xff\xd8\xff", b"RIFF")
 POLL, JOB_TIMEOUT = 2.0, 900
@@ -689,10 +690,26 @@ class Studio:
         raise PaintError("ComfyUI took longer than 15 minutes")
 
     async def _prune(self) -> None:
-        """Keep the art folder within its size budget: forget old failures, then delete the least recently used."""
+        """Keep the art folder within its size budget: forget old failures, drop paintings of items long gone, then
+        delete the least recently used."""
         old = time.time() - 4 * RETRY_FAILED
         for key in [k for k, e in self.index.items() if not e.get("file") and e.get("failed_at", 0) < old]:
             del self.index[key]  # forget long-past failures
+        # Gear paintings outlive their gear: once an item is sold or a delivery leaves, nothing shows it again (its
+        # name is rolled, so it never comes back). Everything still in play is shown on every refresh, so an item
+        # not shown for ITEM_RETENTION is gone for good. Measured from the newest showing, not the clock, so a
+        # Home Assistant that was off for a month doesn't wipe the inventory's paintings on start.
+        last = max((e.get("used", 0) for e in self.index.values() if e.get("file")), default=0)
+        for key in [
+            k
+            for k, e in self.index.items()
+            if e.get("file")
+            and e.get("kind") == "item"
+            and not e.get("redo")
+            and e.get("used", 0) < last - ITEM_RETENTION
+        ]:
+            entry = self.index.pop(key)
+            await self.hass.async_add_executor_job(lambda n=entry["file"]: (self.dir / n).unlink(missing_ok=True))
         files = sorted((e.get("used", 0), k) for k, e in self.index.items() if e.get("file"))
         total = sum(self.index[k].get("bytes", 0) for _, k in files)
         recent = time.time() - KEEP_RECENT  # never delete something still on screen, or it would be painted again

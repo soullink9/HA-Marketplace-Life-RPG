@@ -20,7 +20,20 @@ import types
 sys.path.insert(0, str(Path(__file__).parent))  # for stubs.py
 
 from stubs import *  # noqa: F403,E402
-from stubs import NOW, REGISTERED, TZ, WS, ConfigEntry, Conn, EventEntity, HomeAssistant, State, Users, mod, sel  # noqa: E402
+from stubs import (  # noqa: E402
+    NOW,
+    REGISTERED,
+    TZ,
+    WS,
+    ConfigEntry,
+    Conn,
+    EventEntity,
+    HomeAssistant,
+    State,
+    Users,
+    mod,
+    sel,
+)
 
 TMP = Path(tempfile.mkdtemp())
 H_NOW_REF = NOW
@@ -1160,6 +1173,20 @@ async def main():
     await studio._tidy()
     assert not stray.exists() and "ghost" not in studio.index
     assert all("bytes" in e for e in studio.index.values() if e.get("file"))
+    # paintings of items long gone (sold gear, goods the market took away) go after a week of play unseen;
+    # measured from the newest showing, so a Home Assistant that was off for months keeps them
+    newest = max(e.get("used", 0) for e in studio.index.values() if e.get("file"))
+    for name, age, kind in (("gone", 8, "item"), ("kept", 6, "item"), ("guard", 400, "guardian")):
+        (studio.dir / f"{name}.webp").write_bytes(PNG)
+        studio.index[name] = {"file": f"{name}.webp", "kind": kind, "used": newest - age * 86400, "bytes": len(PNG)}
+    await studio._prune()
+    assert "gone" not in studio.index and not (studio.dir / "gone.webp").exists()
+    assert "kept" in studio.index and "guard" in studio.index
+    for e in studio.index.values():
+        if e.get("file"):
+            e["used"] -= 200 * 86400  # Home Assistant was off: everything is old, but nothing is older than the rest
+    await studio._prune()
+    assert "kept" in studio.index, "an inventory's paintings survive a long shutdown"
     # the size budget: least recently shown go first
     keep_total, keep_recent = art.MAX_TOTAL, art.KEEP_RECENT
     for e in studio.index.values():

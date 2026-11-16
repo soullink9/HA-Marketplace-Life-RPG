@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.1 (2026-11-16)
+
+### Paintings
+
+- Paintings of gear you no longer have are now deleted. Every item that drops, and every item the market brings,
+  gets its own painting, and before, those stayed in `/config/life_rpg/art` after the item was sold or the delivery
+  left, until the folder reached its 1,500-picture cap. After a few months most of the Gallery's count was gear
+  nobody would see again. Now an item painting that hasn't been shown for a week of play is deleted; your gear, the
+  market's current stock and everything else on screen are shown on every refresh, so they're never touched.
+- The week is counted from the newest painting shown, not the clock, so a Home Assistant that was off for a while
+  keeps its paintings.
+- Expect the count to drop the first time 1.5.1 starts; the space it frees is small (paintings are WebP).
+
 ## 1.5.0 (2026-11-16)
 
 ### The labyrinth
