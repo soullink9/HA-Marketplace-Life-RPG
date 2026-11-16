@@ -1,18 +1,24 @@
 # System notifications on your phone for the moments that matter
 # Settings → Automations & scenes → Create automation → Create new automation → ⋮ → Edit in YAML.
 # Select everything in the editor, paste this whole file over it, then change
-# notify.mobile_app_your_phone to your phone and "user_" to your adventurer's prefix. Save.
+# notify.mobile_app_your_phone to your phone and event.user_achievements to your adventurer's
+# achievements entity (or switch to the visual editor and pick both). Save.
+# Home Assistant 2026.11 or newer. Nothing goes in the config folder.
 alias: Life RPG - System notifications
 description: Emergency quests (and their fines), penalty quests, choices, level and rank ups, guardians, jobs, skills, hidden quests, evolutions.
 mode: queued
+max: 25
+max_exceeded: silent
 triggers:
   - trigger: state
     entity_id: event.user_achievements
+    not_from: unavailable
+    not_to: [unavailable, unknown]
 conditions:
+  # A real new event, not the entity coming back after a restart or reload.
   - condition: template
     value_template: >
-      {{ trigger.from_state is not none
-         and trigger.from_state.state not in ['unavailable', 'unknown']
+      {{ trigger.from_state is not none and trigger.to_state is not none
          and trigger.to_state.attributes.event_type in
            ['emergency_quest', 'emergency_failed', 'penalty_quest', 'choice_offered', 'choice_won', 'level_up', 'rank_up',
             'guardian_appeared', 'guardian_defeated', 'guardian_returned', 'job_level', 'skill_up', 'hidden_quest', 'race_evolved',
@@ -41,7 +47,7 @@ actions:
         {% elif t == 'level_up' %}You have reached level {{ e.level }}.
         {% elif t == 'rank_up' %}You are now {{ e.rank }}-rank.
         {% elif t == 'guardian_appeared' %}{{ e.guardian }}{{ ' (elite)' if e.elite }}{{ ' (cursed)' if e.cursed }} guards this week's floor. {{ e.trait }}.
-        {% elif t == 'guardian_returned' %}{{ e.guardian }} survived the week and still guards floor {{ e.floor }}. Try {{ e.attempt }}.{{ ' −' ~ e.fine ~ ' gold.' if e.fine }}
+        {% elif t == 'guardian_returned' %}{{ e.guardian }} survived the week and still guards floor {{ e.floor }}.{{ ' The loss cost ' ~ e.fine ~ ' gold.' if e.fine }} Try {{ e.attempt }}: it comes back weaker. Win to go deeper.
         {% elif t == 'guardian_defeated' %}{{ e.guardian }} falls. +{{ e.xp }} XP. Floor {{ e.next_floor }} opens Monday.
         {% elif t == 'job_level' %}{{ e.job }} level {{ e.level }}: {{ e.title }}.
         {% elif t == 'skill_up' %}{{ e.skill }} has reached {{ e.grade }}.

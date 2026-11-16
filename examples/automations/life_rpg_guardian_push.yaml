@@ -1,27 +1,37 @@
 # Sunday push when the guardian is close to falling
 # Settings → Automations & scenes → Create automation → Create new automation → ⋮ → Edit in YAML.
 # Select everything in the editor, paste this whole file over it, then change
-# notify.mobile_app_your_phone to your phone and "user_" to your adventurer's prefix. Save.
+# notify.mobile_app_your_phone to your phone and "user_" to your adventurer's prefix
+# (sensor.user_labyrinth, sensor.user_level, sensor.user_gold). Save.
+# Home Assistant 2026.11 or newer. Nothing goes in the config folder.
 alias: Life RPG - guardian within reach
-description: Sunday at 5 pm, if this week's guardian has 25% HP or less, say so.
+description: Sunday at 5 pm, if this week's guardian has 25% HP or less, say what winning and losing mean.
 mode: single
 triggers:
   - trigger: time
     at: "17:00:00"
 conditions:
   - condition: time
-    weekday: [sun]
+    weekday: sun
   - condition: numeric_state
     entity_id: sensor.user_labyrinth
     above: 0
     below: 26
 actions:
+  - variables:
+      lab: sensor.user_labyrinth
+      # What losing the week costs: 30 + 2 gold per level, at most 200 and never more than 10% of your gold.
+      fine: >
+        {{ [30 + 2 * (states('sensor.user_level') | int(0)), 200,
+            (states('sensor.user_gold') | float(0) * 0.1) | int] | min }}
   - action: notify.mobile_app_your_phone
     data:
       title: "[Guardian weakened]"
       message: >
-        {{ state_attr('sensor.user_labyrinth', 'guardian') }} has {{ states('sensor.user_labyrinth') }}% HP left
-        and the floor closes at midnight. One more quest could finish it.
+        {{ state_attr(lab, 'guardian') }} has {{ states(lab) }}% HP left on floor {{ state_attr(lab, 'floor') }}.
+        Fell it before midnight for +{{ state_attr(lab, 'reward_xp') }} XP and the next floor.
+        If it's still standing, it holds the floor next week{{ ' and the loss costs ' ~ fine ~ ' gold' if fine | int > 0 }}.
       data:
         clickAction: /life-rpg
         url: /life-rpg
+        tag: life-rpg-guardian

@@ -10,7 +10,7 @@ Optional: words from your own LLM (through Home Assistant's AI Task), conversati
 ## Your LLM: the goddess, the merchant and the world
 Any integration that offers an **AI Task** entity works; with Ollama, add an AI Task under the Ollama integration. Pick it under **Art and AI** (or leave it empty for Home Assistant's default) and choose the features:
 - **Talk to the goddess:** a chat in the Goddess tab. Her portrait changes with her mood.
-- **Written flavour:** her good-morning message, today's side quests, what the choice's character says, emergency narration, a bestiary entry for each guardian, lore for rare-or-better items, and a weekly chronicle in the Log tab.
+- **Written flavour:** her good-morning message, today's side quests, what the choice's character says, emergency narration, a bestiary entry for each guardian, lore for rare-or-better items, and a weekly chronicle in the Log tab. [`examples/automations/life_rpg_goddess_morning.yaml`](../examples/automations/life_rpg_goddess_morning.yaml) sends the good-morning message to your phone.
 - **Haggling:** talk to Marrow Fennick in your own words.
 
 The LLM only writes words. The game decides every number. Without an LLM everything still works: the goddess speaks from 137 built-in lines, and haggling uses an offer box.

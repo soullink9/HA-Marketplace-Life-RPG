@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Example automations
+
+- Every example in `examples/automations/` is one automation you paste into the automation editor's YAML mode, for
+  Home Assistant 2026.11 and newer; nothing goes in the config folder.
+- The notifications and chore approval now catch the very first event after installing (it was skipped because the
+  entity started as `unknown`), ignore the entity coming back after a restart or reload, and queue up to 25 events
+  at once so a busy update doesn't drop any.
+- A returning guardian's notification says what the loss cost and that winning is the only way deeper.
+- The Sunday guardian push says what felling it pays and what losing the week would cost.
+- The 8 pm streak nudge says how many quests a penalty quest needs, and takes the `user_` prefix in one place.
+- New: the goddess's good-morning message on your phone.
+
 ## 1.5.2 (2026-11-16)
 
 ### Paintings

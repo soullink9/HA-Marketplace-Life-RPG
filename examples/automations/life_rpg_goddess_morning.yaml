@@ -1,0 +1,31 @@
+# The goddess's good-morning message on your phone
+# Needs "Written flavour" on in the integration's goddess options (see The Goddess and Your LLM).
+# Settings → Automations & scenes → Create automation → Create new automation → ⋮ → Edit in YAML.
+# Select everything in the editor, paste this whole file over it, then change
+# notify.mobile_app_your_phone to your phone and sensor.user_devotion to your adventurer's
+# devotion sensor (or switch to the visual editor and pick both). Save.
+# Home Assistant 2026.11 or newer. Nothing goes in the config folder.
+alias: Life RPG - goddess good morning
+description: When the goddess writes today's good-morning message (after 6 am), send it to your phone.
+mode: single
+triggers:
+  - trigger: state
+    entity_id: sensor.user_devotion
+    attribute: morning_message
+conditions:
+  # Only a newly written message, not the sensor coming back after a restart.
+  - condition: template
+    value_template: >
+      {{ trigger.from_state is not none and trigger.to_state is not none
+         and trigger.from_state.state not in ['unavailable', 'unknown']
+         and trigger.to_state.attributes.morning_message not in [none, '']
+         and trigger.to_state.attributes.morning_message != trigger.from_state.attributes.morning_message }}
+actions:
+  - action: notify.mobile_app_your_phone
+    data:
+      title: "[A message from your goddess]"
+      message: "{{ trigger.to_state.attributes.morning_message }}"
+      data:
+        clickAction: /life-rpg
+        url: /life-rpg
+        tag: life-rpg-morning
