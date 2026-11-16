@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.2 (2026-11-16)
+
+### Paintings
+
+- Removing an adventurer now cleans up its paintings too. Its portraits and base paintings, and the goddess and
+  merchant as that adventurer had chosen them, used to stay in `/config/life_rpg/art` for good, because only a newer
+  painting for the same adventurer replaced them; a new adventurer starts with new ones. Adding and removing
+  adventurers while trying the game left a folder of portraits and goddesses nobody would see again.
+- The rule from 1.5.1 now covers them: a portrait, goddess or merchant painting that hasn't been shown for a week of
+  play is deleted, like gear you no longer have. Everything in use is shown on every refresh, and a goddess shared
+  by two adventurers stays while either still shows her. Guardians (the bestiary keeps them) and the daily visitors
+  (who take turns) are kept as before.
+
 ## 1.5.1 (2026-11-16)
 
 ### Paintings

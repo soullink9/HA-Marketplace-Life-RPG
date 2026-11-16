@@ -1173,15 +1173,30 @@ async def main():
     await studio._tidy()
     assert not stray.exists() and "ghost" not in studio.index
     assert all("bytes" in e for e in studio.index.values() if e.get("file"))
-    # paintings of items long gone (sold gear, goods the market took away) go after a week of play unseen;
-    # measured from the newest showing, so a Home Assistant that was off for months keeps them
+    # paintings of things long gone (sold gear, goods the market took away, the portraits and goddess of an
+    # adventurer that was removed) go after a week of play unseen; measured from the newest showing, so a Home
+    # Assistant that was off for months keeps them. What's on screen now is shown on every refresh, so it stays.
+    await fx.async_refresh()
+    on_screen = {k for k, e in studio.index.items() if e.get("file") and e["file"] in json.dumps(fx.data)}
     newest = max(e.get("used", 0) for e in studio.index.values() if e.get("file"))
-    for name, age, kind in (("gone", 8, "item"), ("kept", 6, "item"), ("guard", 400, "guardian")):
+    for name, age, kind, group in (
+        ("gone", 8, "item", None),
+        ("kept", 6, "item", None),
+        ("guard", 400, "guardian", None),
+        ("visitor", 400, "npc", None),
+        ("old-portrait", 8, "portrait", "portrait:removed1"),
+        ("old-goddess", 8, "goddess", "goddess:removed1:serene"),
+        ("old-merchant", 8, "merchant", "merchant-base:removed1"),
+    ):
         (studio.dir / f"{name}.webp").write_bytes(PNG)
         studio.index[name] = {"file": f"{name}.webp", "kind": kind, "used": newest - age * 86400, "bytes": len(PNG)}
+        if group:
+            studio.index[name]["group"] = group
     await studio._prune()
-    assert "gone" not in studio.index and not (studio.dir / "gone.webp").exists()
-    assert "kept" in studio.index and "guard" in studio.index
+    for name in ("gone", "old-portrait", "old-goddess", "old-merchant"):
+        assert name not in studio.index and not (studio.dir / f"{name}.webp").exists(), name
+    assert on_screen and on_screen <= set(studio.index), on_screen
+    assert {"kept", "guard", "visitor"} <= set(studio.index)
     for e in studio.index.values():
         if e.get("file"):
             e["used"] -= 200 * 86400  # Home Assistant was off: everything is old, but nothing is older than the rest
