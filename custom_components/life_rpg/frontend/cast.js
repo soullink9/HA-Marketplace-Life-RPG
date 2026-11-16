@@ -2,7 +2,7 @@
  * daily choices, and icons for potions and cosmetics. These are the stand-ins whenever no painting exists
  * (no ComfyUI, pixel-art mode, or a painting still on its way). Everything is drawn from code; same input,
  * same picture. */
-import { Buf, adventurerArt, monsterArt, ramp, rng, toImage, METALS, LEATHER, WOOD } from "./art.js?v=1.4.0";
+import { Buf, adventurerArt, monsterArt, ramp, rng, toImage, METALS, LEATHER, WOOD } from "./art.js?v=1.5.0";
 
 const cache = new Map();
 // Draw each picture once per page load.

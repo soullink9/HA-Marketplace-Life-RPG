@@ -141,6 +141,52 @@ def test_penalty_and_labyrinth():
     assert v["labyrinth"]["floor"] == 2 or v["bestiary_total"] >= 1
 
 
+def test_failed_floor_repeats():
+    """A guardian still standing when the week ends holds its floor: same guardian, weaker, and a small gold fine.
+    You only go deeper by winning."""
+    g = G.Game(GOALS, "human", seed="repeat")
+    v, _ = play(g, at(MON, 9), {})
+    first = dict(g.L["guardian"])
+    g.L["gold"], g.L["xp"] = 1000, 5000
+    v, _ = play(g, at(MON, 10), {})
+    assert (
+        v["labyrinth"]["attempt"] == 1 and v["labyrinth"]["fail_fine"] == G.FINE_BASE + G.FINE_PER_LEVEL * g.L["level"]
+    )
+    for d in range(1, 8):  # a week of nothing: the guardian survives
+        v, ev = play(g, at(MON + timedelta(days=d), 9), {})
+    lab, fine = v["labyrinth"], G.FINE_BASE + G.FINE_PER_LEVEL * g.L["level"]
+    assert "guardian_returned" in ev and "guardian_appeared" not in ev, ev
+    assert lab["floor"] == lab["deepest"] == 1 and lab["attempt"] == 2 and not lab["defeated"]
+    for k in ("name", "kind", "element", "seed", "trait", "elite", "cursed"):
+        assert g.L["guardian"][k] == first[k], k
+    assert g.L["guardian"]["dmg"] == 0 and g.L["guardian"]["start"] == (MON + timedelta(days=7)).isoformat()
+    ret = next(e for e in v["events"] if e["type"] == "guardian_returned")
+    assert ret["fine"] == fine and ret["attempt"] == 2 and g.L["stats"]["floor_fines"] == fine
+    assert g.L["xp"] == 5000, "no XP is taken"
+    assert v["goddess"]["pool"] in ("rematch", "morning", "comeback", "choice") and "rematch" in C.GODDESS_LINES
+
+    def lose_week(start, gold):
+        for d in range(start, start + 6):
+            play(g, at(MON + timedelta(days=d), 9), {})
+        g.L["gold"] = gold  # set just before the week closes
+        v, _ = play(g, at(MON + timedelta(days=start + 6), 9), {})
+        return v, next(e for e in v["events"] if e["type"] == "guardian_returned")
+
+    v, ret = lose_week(8, 50)  # a second lost week: try 3, fined again, never more than 10% of the gold
+    assert v["labyrinth"]["floor"] == 1 and v["labyrinth"]["attempt"] == 3 and ret["fine"] == 5
+    assert g.L["stats"]["floors_failed"] == 2 and g.L["stats"]["floor_fines"] == fine + 5
+    v, ret = lose_week(15, 0)  # broke adventurers repeat the floor too, they just can't pay
+    assert v["labyrinth"]["attempt"] == 4 and ret["fine"] == 0 and g.L["gold"] >= 0
+    # beat it and the next Monday opens floor 2 with a new guardian
+    g.L["guardian"]["dmg"] = g.L["guardian"]["hp"]
+    v, ev = play(g, at(MON + timedelta(days=22), 9), {})
+    assert "guardian_defeated" in ev and v["labyrinth"]["deepest"] == 2
+    for d in range(23, 29):
+        v, ev = play(g, at(MON + timedelta(days=d), 9), {})
+    assert "guardian_appeared" in ev and v["labyrinth"]["floor"] == 2 and v["labyrinth"]["attempt"] == 1
+    assert g.L["guardian"]["name"] != first["name"] or g.L["guardian"]["seed"] != first["seed"]
+
+
 def test_emergency():
     """An emergency quest starts at its time and clears when the target is reached."""
     g = G.Game({"steps": 8000}, seed="e")
@@ -201,10 +247,10 @@ def test_emergency_penalty():
     assert g.L["emergency"]["fine"] == 10 and g.decline_emergency() == 5 and g.L["gold"] == 95
     # Home Assistant away when it ended: no fine
     tue = MON + timedelta(days=8)
-    g.L["gold"] = 1000
     _emergency(g, tue + timedelta(days=-1), "19:00")  # Monday 19:00, after work
     mon2 = MON + timedelta(days=7)
-    play(g, at(mon2, 19, 5), {"steps": 4000})
+    play(g, at(mon2, 19, 5), {"steps": 4000})  # the new week: last week's guardian survived, and that has its own fine
+    g.L["gold"] = 1000
     assert not g.L["emergency"]["excused"]
     v, _ = play(g, at(mon2, 22, 30), {"steps": 4000})
     assert g.L["gold"] == 1000 and any(e["type"] == "emergency_failed" and e["why"] == "late" for e in v["events"])

@@ -979,6 +979,16 @@ GODDESS_LINES = {
         "Floor {floor} smells like damp stone and opportunity.",
         "{guardian} has no idea what's coming. I do. It's you.",
     ],
+    "rematch": [
+        "{guardian} is still on floor {floor}, licking its wounds. Round two. You hit harder now.",
+        "Floor {floor} again. No shame in it. {guardian} is tired and you're not.",
+        "The stairs down stay locked until {guardian} falls. Let's go unlock them.",
+        "{guardian} held floor {floor} last week. It won't hold it this one.",
+        "A rematch with {guardian}. I paid the toll, well, you did. Let's make it worth it.",
+        "Same floor, same guardian, a little weaker. Same you, a little stronger.",
+        "{guardian} is waiting where you left it. Rude of it to still be standing.",
+        "Floor {floor}, take two. Every quest still counts as a hit.",
+    ],
     "slain": [
         "{guardian} has fallen. Another page in your bestiary.",
         "The guardian is down! The stairs to floor {floor} are open.",

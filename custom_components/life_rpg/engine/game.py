@@ -451,27 +451,31 @@ class Game(ShopMixin, BountyMixin, InputsMixin, CharactersMixin):
             L["streak"] = 0
 
     def _new_guardian(self, today: date) -> None:
-        """Open this week's floor. Its guardian is sized to ~95% of your recent daily damage."""
+        """Open this week's floor. Its guardian is sized to ~95% of your recent daily damage.
+
+        You only go deeper by winning: a guardian still standing when the week ends holds its floor, and you face it
+        again (wounded) the next week, after paying a small fine."""
         L, old = self.L, self.L["guardian"]
         if old:
             days = max((today - date.fromisoformat(old["start"])).days, 1)
             L["pace"] = (L["pace"] + [old.get("base", old["dmg"]) / days])[-2:]
             L["week_fails"] = 0 if old["won"] else L.get("week_fails", 0) + 1
         pace = sum(L["pace"]) / len(L["pace"]) if L["pace"] else 0
+        hp = max(GUARD_FLOOR * len(self.goals), pace * GUARD_PACE) * (7 - today.weekday())
+        if old and not old["won"]:
+            self._guardian_returns(old, today, hp)
+            return
         rng = self._rng("guardian")
         floor = L["floor"]
         elite = floor % C.ELITE_EVERY == 0
         cursed = not elite and bool(old) and rng.random() < C.CURSED_CHANCE
-        hp = max(GUARD_FLOOR * len(self.goals), pace * GUARD_PACE) * (7 - today.weekday())
         if elite:
             kind_hp = ELITE_HP
         elif cursed:
             kind_hp = CURSED_HP
         else:
             kind_hp = 1
-        # Each week in a row you failed to defeat a guardian makes the next one weaker (counted up to four weeks).
-        pity = PITY ** min(L.get("week_fails", 0), 4)
-        hp *= kind_hp * pity
+        hp *= kind_hp
         if old:  # your gear and gifts keep up with the guardians; the floor's trait is the edge
             hp *= 1 + self.effects().get("boss", 0) / 100
         kind = self._draw("creatures", C.CREATURES, rng)
@@ -495,6 +499,7 @@ class Game(ShopMixin, BountyMixin, InputsMixin, CharactersMixin):
             "elite": elite,
             "cursed": cursed,
             "trait": trait,
+            "attempt": 1,
         }
         L["week"] = {}
         self._emit(
@@ -507,6 +512,41 @@ class Game(ShopMixin, BountyMixin, InputsMixin, CharactersMixin):
             elite=elite,
             cursed=cursed,
             trait=trait[0],
+        )
+
+    def _guardian_returns(self, old: dict[str, Any], today: date, hp: float) -> None:
+        """The week ended with the guardian standing: same floor, same guardian, a fresh fight and a small fine.
+
+        It comes back wounded: each week in a row it survived takes PITY off its HP (counted up to four weeks)."""
+        L = self.L
+        kind_hp = ELITE_HP if old["elite"] else CURSED_HP if old["cursed"] else 1
+        hp *= kind_hp * PITY ** min(L["week_fails"], 4) * (1 + self.effects().get("boss", 0) / 100)
+        fine = min(self._fine(), L["gold"])
+        L["gold"] -= fine
+        self._stat("floor_fines", fine)
+        self._stat("floors_failed")
+        g = {
+            **old,
+            "hp": max(10, int(round(hp, -1))),
+            "dmg": 0,
+            "base": 0,
+            "start": today.isoformat(),
+            "rank": L["rank"],
+            "attempt": old.get("attempt", 1) + 1,
+        }
+        L["guardian"], L["floor"], L["week"] = g, g["floor"], {}
+        self._emit(
+            "guardian_returned",
+            guardian=g["name"],
+            floor=g["floor"],
+            kind=g["kind"],
+            element=g["element"],
+            hp=g["hp"],
+            elite=g["elite"],
+            cursed=g["cursed"],
+            trait=g["trait"][0],
+            attempt=g["attempt"],
+            fine=fine,
         )
 
     def _schedule_emergency(self, today: date) -> None:
@@ -1109,7 +1149,7 @@ class Game(ShopMixin, BountyMixin, InputsMixin, CharactersMixin):
         elif L["hist"] and not L["hist"][-1]["c"] and L["days"] > 2 and now.hour < 12:
             pool = "comeback"
         elif g["start"] == now.date().isoformat():
-            pool = "labyrinth"
+            pool = "rematch" if g.get("attempt", 1) > 1 else "labyrinth"
         elif now.hour < 10:
             pool = "morning"
         elif streak >= 7 and now.toordinal() % 3 == 0:
@@ -1375,6 +1415,8 @@ class Game(ShopMixin, BountyMixin, InputsMixin, CharactersMixin):
                 "defeated": g["won"],
                 "reward": round(g["hp"] * GUARD_REWARD * (2 if g["elite"] or g["cursed"] else 1)),
                 "trait": {"name": g["trait"][0], "desc": g["trait"][1]},
+                "attempt": g.get("attempt", 1),
+                "fail_fine": min(self._fine(), L["gold"]),
                 "ends": (start + timedelta(days=6 - start.weekday())).isoformat(),
             },
             "bestiary": L["bestiary"][-120:][::-1],
@@ -1614,7 +1656,8 @@ class Game(ShopMixin, BountyMixin, InputsMixin, CharactersMixin):
         return (day in w["days"] and minute >= w["start"]) or ((day - 1) % 7 in w["days"] and minute < w["end"])
 
     def _fine(self) -> int:
-        """What failing an emergency outside working hours costs: modest, and never more than 10% of your gold."""
+        """What failing an emergency outside working hours, or a week's guardian, costs: modest, and never more than
+        10% of your gold."""
         return int(min(FINE_BASE + FINE_PER_LEVEL * self.L["level"], FINE_MAX, self.L["gold"] * FINE_SHARE))
 
     def decline_emergency(self) -> int:

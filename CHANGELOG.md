@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.5.0 (2026-11-16)
+
+### The labyrinth
+
+- You only go deeper by winning. A guardian still standing when the week ends now holds its floor: the next week
+  you face the same guardian again (same name, trait and painting) instead of a fresh one, and the floor below stays
+  shut until it falls. Before, the floor number stayed put but a brand-new guardian took over as if a new floor had
+  opened, and losing cost nothing.
+- Losing a week costs a small fine, the same size as a failed emergency: 30 + 2 gold per level, at most 200 and
+  never more than 10% of your gold. No XP is taken, so levels and ranks never go backwards.
+- The guardian comes back wounded, as before: its HP is set from your pace again and cut by 15% for each week in a
+  row it has survived (up to four weeks).
+- A new `guardian_returned` event (with the floor, the `attempt` number and the `fine` paid) replaces
+  `guardian_appeared` for a repeated floor, with its own toast, phone notification in the example automation, and
+  goddess lines. The Labyrinth tab shows which try you're on and what losing this week would cost.
+
 ## 1.4.0 (2026-11-15)
 
 **Needs Home Assistant 2026.11 or newer.** The Marketplace only offers this version on 2026.11 and later; older

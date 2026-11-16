@@ -73,6 +73,7 @@ EVENT_TYPES = [
     "shield_used",
     "guardian_appeared",
     "guardian_defeated",
+    "guardian_returned",
     "chest_dropped",
     "devotion_up",
     "choice_offered",

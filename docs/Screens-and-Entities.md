@@ -29,7 +29,7 @@ If several adventurers exist, switch between them at the top; you can only act f
 - `title_earned`, `badge_earned`, `hidden_quest`
 - `emergency_quest`, `emergency_cleared`, `emergency_failed`, `emergency_declined` (with `fine`, `excused` and, for failures, `why`: work, late or off)
 - `penalty_quest`, `penalty_cleared`, `streak_broken`, `shield_earned`, `shield_used`
-- `guardian_appeared`, `guardian_defeated`
+- `guardian_appeared`, `guardian_defeated`, `guardian_returned` (a guardian that survived its week holds the floor: with `attempt` and the `fine` paid)
 - `choice_offered`, `choice_won`, `choice_lost`
 - `bounty_claimed`, `bounty_done`
 - `chest_dropped`, `devotion_up`, `bargain_struck`, `market_restocked`, `goddess_gift`

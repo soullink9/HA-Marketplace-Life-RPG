@@ -66,10 +66,11 @@ The panel suggests the job your last four weeks point to. **Active bonuses** on 
 Every quest has a skill that grows a little each day you practise it, whether or not you finish: Beginner → Intermediate → Advanced → Expert → Master → Grandmaster → Saint, then Saint +1, +2… every 2,000 points. Each grade adds a small XP bonus to its quest.
 
 ## The labyrinth
-- A new floor opens every Monday. Its guardian is generated: one of 12 creature types × 12 elements, with random traits and a name like "Sugar-Crazed Slime of the Missed Alarm".
+- A new floor opens on the Monday after you defeat the last one. Its guardian is generated: one of 12 creature types × 12 elements, with random traits and a name like "Sugar-Crazed Slime of the Missed Alarm".
 - **HP** is your recent daily pace × the days left in the week, so it always asks a little more of you. Every quest's XP is damage.
 - **Floor traits** (25) change the week: Flooded Halls doubles water damage, Thin Air boosts Climb XP, Treasure Vault boosts loot luck…
-- **Elite floors** every 10th floor and **cursed floors** (about 1 in 10) are tougher and pay double. Lose a week and the next guardian is weaker.
+- **Elite floors** every 10th floor and **cursed floors** (about 1 in 10) are tougher and pay double.
+- **You only go deeper by winning.** If the guardian is still standing when the week ends, you repeat the floor against the same guardian with the same trait and painting. Its HP is set from your pace again, then cut by 15% for each week in a row it has survived (up to four) and pay a small fine, the same size as an emergency's: 30 + 2 gold per level, at most 200 and never more than 10% of your gold. No XP is taken.
 - **Bestiary:** every defeated guardian, plus a tally of creature types (unknown types show as silhouettes).
 
 ## Races and racial gifts

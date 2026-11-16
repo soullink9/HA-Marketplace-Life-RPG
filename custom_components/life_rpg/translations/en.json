@@ -215,6 +215,7 @@
               "shield_used": "Shield used",
               "guardian_appeared": "Guardian appeared",
               "guardian_defeated": "Guardian defeated",
+              "guardian_returned": "Guardian returned",
               "chest_dropped": "Chest dropped",
               "devotion_up": "Devotion up",
               "choice_offered": "Choice offered",

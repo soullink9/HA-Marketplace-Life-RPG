@@ -20,13 +20,13 @@
  * Other files: styles.js (all CSS), art.js (pixel art for the adventurer, gear and monsters),
  * cast.js (pixel art for the goddess, the merchant and the other people).
  */
-import { adventurerArt, itemIconArt, monsterArt, RARITY_GLOW } from "./art.js?v=1.4.0";
-import { luneArt, merchantArt, npcArt, trinketArt } from "./cast.js?v=1.4.0";
-import { CARD_CSS, CSS, PANEL_CSS } from "./styles.js?v=1.4.0";
+import { adventurerArt, itemIconArt, monsterArt, RARITY_GLOW } from "./art.js?v=1.5.0";
+import { luneArt, merchantArt, npcArt, trinketArt } from "./cast.js?v=1.5.0";
+import { CARD_CSS, CSS, PANEL_CSS } from "./styles.js?v=1.5.0";
 
 // The panel's element name carries the version, so a Home Assistant app that kept an older panel in memory
 // loads this one as soon as Home Assistant hands it the new panel (see __init__.py).
-const VERSION = "1.4.0";
+const VERSION = "1.5.0";
 const PANEL_TAG = `life-rpg-panel-${VERSION.replace(/\./g, "-")}`;
 
 // Pixel art is the stand-in for every painting; a viewer can also prefer it on this device.
@@ -170,6 +170,8 @@ if (!customElements.get(PANEL_TAG)) {
       case "shield_used": return ["Shield used", `Your ${e.streak}-day streak was protected.`, "blue"];
       case "guardian_appeared": return [e.cursed ? "A cursed floor" : e.elite ? "An elite floor" : "A new floor",
         `Floor ${e.floor}: ${e.guardian} awaits. ${num(e.hp)} HP. ${e.trait || ""}`, e.cursed ? "red" : "violet"];
+      case "guardian_returned": return ["The guardian holds its floor",
+        `${e.guardian} survived the week. Floor ${e.floor} again, try ${e.attempt}: ${num(e.hp)} HP.${e.fine ? ` −${num(e.fine)} gold.` : ""}`, "red"];
       case "guardian_defeated": return ["Guardian defeated", `${e.guardian} falls on floor ${e.floor}. +${num(e.xp)} XP. Floor ${e.next_floor} is open.`, "gold"];
       case "chest_dropped": return ["Chest acquired", `${cap(e.chest)} chest${e.rank ? ", rank " + e.rank : ""}.`, "blue"];
       case "devotion_up": return ["Devotion deepens", `${e.tier}.${e.blessing ? ` Blessing: ${e.blessing}.` : ""}`, "violet"];
@@ -182,7 +184,7 @@ if (!customElements.get(PANEL_TAG)) {
     }
   }
   const BIG = new Set(["level_up", "rank_up", "race_evolved", "hidden_quest", "emergency_quest", "penalty_quest", "guardian_defeated",
-    "guardian_appeared", "title_earned", "perfect_day", "job_change", "job_level", "choice_offered"]);
+    "guardian_appeared", "guardian_returned", "title_earned", "perfect_day", "job_change", "job_level", "choice_offered"]);
 
   // ---------------------------------------------------------------- art
   function rankEmblem(rank, size = 64) {
@@ -495,7 +497,7 @@ if (!customElements.get(PANEL_TAG)) {
           <div class="stack">
             <div><div class="name">${esc(g.name)}</div>
               <div class="chips" style="margin-top:6px"><span class="chip el" style="--ec:${ELEMENT_C[g.element]}">${esc(cap(g.element))}</span><span class="chip">${esc(cap(g.kind))}</span>
-              ${g.elite ? '<span class="chip gold">Elite</span>' : ""}${g.cursed ? '<span class="chip red">Cursed</span>' : ""}</div></div>
+              ${g.elite ? '<span class="chip gold">Elite</span>' : ""}${g.cursed ? '<span class="chip red">Cursed</span>' : ""}${g.attempt > 1 ? `<span class="chip red">Try ${g.attempt}</span>` : ""}</div></div>
             <div>${bar(g.hp - g.damage, g.hp, `${tone} thick`, "Guardian HP")}<div class="row between small"><span>${num(g.hp - g.damage)} / ${num(g.hp)} HP</span><span>${g.pct}%</span></div></div>
             ${loreFor(v, "guardian", g.floor) ? `<p class="speech small">${esc(loreFor(v, "guardian", g.floor))}</p>` : ""}
             <div class="trait"><b>${esc(g.trait.name)}</b><div class="small">${esc(g.trait.desc)}</div></div>
@@ -781,7 +783,7 @@ if (!customElements.get(PANEL_TAG)) {
             <div><div class="count">${num(v.bestiary_total)}</div><div class="small muted">Guardians defeated</div></div>
             <div><div class="count">${nextElite}</div><div class="small muted">Next elite floor</div></div>
           </div>
-          <p class="small muted center-text">One floor opens each Monday. Its guardian's HP is set by your recent pace, so it always asks a little more of you. Lose a week and the next guardian is weaker.</p>
+          <p class="small muted center-text">A new floor opens on the Monday after you defeat its guardian. Its HP is set by your recent pace, so it always asks a little more of you. If it's still standing when the week ends, you repeat the floor against the same guardian, a little weaker, and pay a small fine${g.defeated ? "" : ` (${num(g.fail_fine)} gold right now)`}.</p>
           <div class="wt" style="margin-top:14px">Creatures</div>
           <div class="kinds">${kinds.map(([k, n]) => `<div class="kind ${n ? "" : "unseen"}">${monster(k, n ? (v.bestiary.find((b) => b.kind === k) || {}).element || "shadow" : "shadow", n ? (v.bestiary.find((b) => b.kind === k) || {}).seed || k : `silhouette:${k}`, 1)}<b>${n || "?"}</b><span>${n ? esc(cap(k)) : "Unknown"}</span></div>`).join("")}</div>
         </section>

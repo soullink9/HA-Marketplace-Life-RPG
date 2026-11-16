@@ -651,6 +651,7 @@ def lune_mood_for(pool: str) -> str:
         "choice": "playful",
         "streak": "playful",
         "labyrinth": "divine",
+        "rematch": "divine",
         "night": "serene",
         "morning": "serene",
     }.get(pool, "serene")
