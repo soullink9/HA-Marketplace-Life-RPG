@@ -43,10 +43,10 @@ async def _pick(hass: HomeAssistant, ctx: llm.LLMContext, name: str | None, act:
             c for c in coords if name.casefold() in c.config_entry.title.casefold()
         ]
     elif user_id and (mine := [c for c in coords if c.user_id == user_id]):
-        found = mine
+        found = mine[:1]
     else:
         found = coords if len(coords) == 1 else []
-    if not found:
+    if len(found) != 1:  # a name that fits several: ask, never guess whose game to change
         raise HomeAssistantError("Which adventurer? " + ", ".join(c.config_entry.title for c in coords))
     coord = found[0]
     if act and user_id and coord.user_id and coord.user_id != user_id:

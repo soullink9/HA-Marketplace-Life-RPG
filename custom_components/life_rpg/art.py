@@ -20,6 +20,7 @@ import logging
 from pathlib import Path
 import time
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 import uuid
 
 import aiohttp
@@ -36,7 +37,8 @@ MAX_FILES = 1500  # least-recently-used paintings are deleted past this...
 MAX_TOTAL = 1024 * 1024 * 1024  # ...or once the folder passes 1 GB
 HARD_TOTAL = MAX_TOTAL * 3 // 2  # past this even recently shown paintings go (oldest first)
 WEBP_QUALITY = 88  # paintings are kept as WebP (a fraction of the PNG's size); PNG if Pillow isn't there
-MAX_BYTES = 32 * 1024 * 1024  # a single painting may not be larger than this
+MAX_BYTES = 32 * 1024 * 1024  # a single painting may not be larger than this...
+MAX_PIXELS = 40_000_000  # ...nor more pixels than this (a 4x upscale of a tall portrait is ~25 million)
 KEEP_RECENT = 3 * 24 * 3600  # paintings shown in the last three days are never pruned
 UNSEEN_RETENTION = 7 * 24 * 3600  # these not shown for a week of play go: they're never coming back on screen...
 PRUNE_UNSEEN = ("item", "portrait", "goddess", "merchant")  # ...(guardians stay in the bestiary; visitors take turns)
@@ -535,6 +537,7 @@ class Studio:
             started = time.time()
             try:
                 data = await self._paint(job)
+                await self.hass.async_add_executor_job(check_image, data)
                 took = time.time() - started  # how long a painting takes, for the Gallery's estimate
                 self.status["avg_s"] = round(
                     took if not self.status.get("avg_s") else 0.8 * self.status["avg_s"] + 0.2 * took, 1
@@ -542,7 +545,7 @@ class Studio:
             except (aiohttp.ClientError, TimeoutError) as err:
                 _LOGGER.debug("ComfyUI unreachable: %s", err)
                 self._offline_until = time.time() + RETRY_OFFLINE
-                self.status.update(error=f"ComfyUI isn't reachable at {job['cfg']['url']}.")
+                self.status.update(error=f"ComfyUI isn't reachable at {public_url(job['cfg']['url'])}.")
                 continue
             except PaintError as err:
                 _LOGGER.warning("Life RPG could not paint %s: %s", job["key"], err)
@@ -743,9 +746,28 @@ def as_png(data: bytes) -> bytes:
     from PIL import Image  # noqa: PLC0415
 
     with Image.open(io.BytesIO(data)) as im:
+        if im.width * im.height > MAX_PIXELS:
+            raise ValueError(f"{im.width}x{im.height} is too large")
         out = io.BytesIO()
         im.convert("RGB").save(out, "PNG")
     return out.getvalue()
+
+
+def check_image(data: bytes) -> None:
+    """Refuse a picture too large to convert safely (Pillow reads only its header here, not the pixels)."""
+    try:
+        from PIL import Image  # noqa: PLC0415
+    except ImportError:
+        return
+    try:
+        with Image.open(io.BytesIO(data)) as im:
+            width, height = im.size
+    except Image.DecompressionBombError as err:
+        raise PaintError("The finished image has far too many pixels") from err
+    except (OSError, ValueError) as err:
+        raise PaintError("ComfyUI didn't return a readable image") from err
+    if width * height > MAX_PIXELS:
+        raise PaintError(f"The finished image is too large ({width}x{height})")
 
 
 def shrink(data: bytes) -> tuple[bytes, str]:
@@ -756,9 +778,11 @@ def shrink(data: bytes) -> tuple[bytes, str]:
         return data, "png"
     try:
         with Image.open(io.BytesIO(data)) as im:
+            if im.width * im.height > MAX_PIXELS:
+                return data, "png"
             out = io.BytesIO()
             im.convert("RGB").save(out, "WEBP", quality=WEBP_QUALITY, method=4)
-    except OSError, ValueError:
+    except OSError, ValueError, Image.DecompressionBombError:
         return data, "png"
     webp = out.getvalue()
     return (webp, "webp") if webp.startswith(b"RIFF") and len(webp) < len(data) else (data, "png")
@@ -766,6 +790,18 @@ def shrink(data: bytes) -> tuple[bytes, str]:
 
 class PaintError(Exception):
     """ComfyUI refused or failed a painting."""
+
+
+def public_url(url: str) -> str:
+    """The ComfyUI address without any user name or password in it, for messages everyone watching can see."""
+    parts = urlsplit(url)
+    if not (parts.username or parts.password):
+        return url
+    host = parts.hostname or ""
+    if ":" in host:  # IPv6
+        host = f"[{host}]"
+    netloc = f"{host}:{parts.port}" if parts.port else host
+    return urlunsplit(parts._replace(netloc=netloc))
 
 
 def _comfy_error(body: Any) -> str:

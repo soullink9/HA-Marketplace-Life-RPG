@@ -1,6 +1,29 @@
 # Changelog
 
-## Unreleased
+## 1.5.3 (2026-11-22)
+
+### Paintings
+
+- A picture with far too many pixels no longer stops the painter. ComfyUI sending a huge image (a custom workflow
+  that upscales too far, say) used to stop all painting until Home Assistant restarted, and one just under that
+  size could take half a gigabyte of memory to convert. Now anything over 40 million pixels (a 4x upscale of a tall
+  portrait is about 25 million) counts as a failed painting: the old picture stays, the Gallery shows why, and the
+  painter carries on.
+- A ComfyUI address with a user name and password in it (`http://me:secret@comfy.lan:8188`) is shown without them
+  when ComfyUI can't be reached. Everyone watching an adventurer sees that message.
+
+### Assist
+
+- A name that fits more than one adventurer is asked about instead of guessed: with Anna and Hannah, "log water for
+  ann" now asks which one. A full name still picks that adventurer, and a partial name that fits only one still
+  works.
+
+### Releases
+
+- GitHub's release workflow runs the checks with a read-only token and publishes from a separate job that installs
+  nothing, so no package from PyPI ever runs where the token that can publish is. No workflow keeps its token in
+  the checkout any more.
+- Every GitHub action is pinned to a commit, and the test requirements to exact versions with hashes.
 
 ### Example automations
 

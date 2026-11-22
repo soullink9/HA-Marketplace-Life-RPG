@@ -231,6 +231,7 @@ class FakeComfy:
     def __init__(self):
         self.online, self.prompts, self.history, self.fail_next = True, [], {}, False
         self.uploads, self.no_edit_nodes = {}, False
+        self.image = None  # what /view sends instead of the usual PNG
 
     def validate(self, wf):
         errors = {}
@@ -379,7 +380,7 @@ class FakeComfy:
             }
         if path == "/view":
             assert (params["type"], params["subfolder"]) in (("output", "life_rpg"), ("temp", "")), params
-            return 200, PNG
+            return 200, self.image or PNG
         return 404, {}
 
 
@@ -1068,6 +1069,27 @@ async def main():
         octx,
     )
     assert r["unit"] == "fl oz" and r["today_total"] == 16, r
+    # a name that fits more than one adventurer is asked about, never guessed
+    from life_rpg import llm_api  # noqa: PLC0415
+
+    def fake(title):
+        return types.SimpleNamespace(
+            runtime_data=types.SimpleNamespace(
+                data={"ok": 1}, user_id=None, config_entry=types.SimpleNamespace(title=title)
+            )
+        )
+
+    two = types.SimpleNamespace(
+        config_entries=types.SimpleNamespace(async_loaded_entries=lambda d: [fake("Anna"), fake("Hannah")])
+    )
+    nctx = LLMContext("ollama", types.SimpleNamespace(user_id=None), "en", "conversation", None)
+    assert (await llm_api._pick(two, nctx, "anna", True)).config_entry.title == "Anna"  # exact name wins
+    assert (await llm_api._pick(two, nctx, "hann", True)).config_entry.title == "Hannah"
+    try:
+        await llm_api._pick(two, nctx, "nn", True)
+        raise AssertionError("an ambiguous name was guessed")
+    except HomeAssistantError as err:
+        assert "Which adventurer" in str(err)
     fx_entry = ConfigEntry({**FLUX_UNET_OPTIONS, "paint": ["portrait"], "art_style": "painted"}, title="Fx")
     fx_entry.entry_id = "fx1"
     fx = coord_mod.LifeRPGCoordinator(hass, fx_entry)
@@ -1165,6 +1187,43 @@ async def main():
     await fx.async_refresh()
     group = [e for e in studio.index.values() if e.get("group") == "portrait:fx1" and e.get("file")]
     assert len(group) == 1, group
+    # a picture with far too many pixels (a tiny PNG can claim 14000x14000) fails that painting, not the painter
+    try:
+        from PIL import Image  # noqa: PLC0415
+    except ImportError:
+        Image = None
+    if Image is not None:
+        import io  # noqa: PLC0415
+
+        for side in (14000, 7000):  # past Pillow's own bomb limit, and under it but over ours
+            buf = io.BytesIO()
+            Image.new("1", (side, side)).save(buf, "PNG")
+            big = buf.getvalue()
+            try:
+                art.check_image(big)
+                raise AssertionError(f"{side}x{side} accepted")
+            except art.PaintError:
+                pass
+            assert art.shrink(big) == (big, "png")
+            COMFY.image = big
+            await fx.async_refresh()
+            purl = fx.data["art"]["portrait"]
+            pkey = studio.key_for_url(purl)
+            before = studio.index[pkey]["file"]
+            await fx.async_action("repaint_art", url=purl)  # the Gallery's "paint again"
+            await settle(studio)
+            shown = studio.index[pkey]
+            assert not studio._task.done(), "the painter stopped"
+            assert shown["file"] == before and "too" in shown.get("error", ""), shown  # the old painting stays
+            COMFY.image = None
+        await fx.async_action("repaint_art", url=purl)
+        await settle(studio)
+        assert studio.index[pkey]["file"] != before and "error" not in studio.index[pkey], studio.index[pkey]
+        print("  oversized images: the painting fails, the painter carries on")
+    # a ComfyUI address with a password shows without it
+    assert art.public_url("http://me:pw@comfy.lan:8188/x") == "http://comfy.lan:8188/x"
+    assert art.public_url("https://u@[fe80::1]/") == "https://[fe80::1]/"
+    assert art.public_url("http://192.168.1.5:8188") == "http://192.168.1.5:8188"
     # the tidy-up: stray files from old repaints and entries whose file vanished
     stray = studio.dir / "portrait-deadbeef.png"
     stray.write_bytes(PNG)

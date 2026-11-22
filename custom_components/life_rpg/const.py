@@ -1,7 +1,7 @@
 """Constants for Life RPG."""
 
 DOMAIN = "life_rpg"
-VERSION = "1.5.2"
+VERSION = "1.5.3"
 URL_BASE = "/life_rpg_static"
 PANEL_PATH = "life-rpg"
 CONF_RACE = "race"
