@@ -49,7 +49,7 @@ read in `coordinator.py`. Options apply without losing progress (the entry reloa
 ## Checking a change
 
 You need Python 3.14, the same as Home Assistant 2026.11 (the integration supports nothing older), and
-Node 20 or newer for the panel check. The engine checks need nothing else; for the rest:
+Node 26 or newer for the panel check. The engine checks need nothing else; for the rest:
 
 ```sh
 pip install -r tests/requirements.txt
@@ -173,7 +173,7 @@ installs from GitHub's releases, so every link in the docs and release notes poi
    itself: the mirror deletes tags Gitea doesn't have, and GitHub follows Gitea on its own.
 
 The Gitea workflows use no actions (`actions/checkout` and the like download from GitHub): each job runs in a plain
-image from Docker Hub (`python:3.14-bookworm`, and `node:20-bookworm` for the panel scripts) and fetches the code
+image from Docker Hub (`python:3.14-trixie`, and `node:26-trixie` for the panel scripts) and fetches the code
 from Gitea with git, so testing and releasing keep working when GitHub can't be reached. Only the tests' packages
 (`tests/requirements.txt`) come from PyPI. When the runner's jobs can't reach Gitea at its public address (a runner
 on the same Docker network as Gitea, say), set an Actions variable `GITEA_INTERNAL_URL` to the address they can
