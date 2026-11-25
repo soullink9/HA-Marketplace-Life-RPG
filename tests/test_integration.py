@@ -2,7 +2,7 @@
 services, websocket API, Assist tools, the art studio and the LLM writer) against Home Assistant stand-ins
 (stubs.py), a fake ComfyUI that checks every workflow against ComfyUI's real node signatures, and a fake AI Task LLM.
 
-Run: python3 tests/test_integration.py      (needs voluptuous and Pillow: pip install -r tests/requirements.txt)
+Run: python3 tests/test_integration.py      (needs probatio and Pillow: pip install -r tests/requirements.txt)
 """
 
 import asyncio

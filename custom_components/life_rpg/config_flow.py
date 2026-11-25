@@ -8,7 +8,7 @@ from homeassistant.const import CONF_NAME
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import selector as sel
 from homeassistant.util import slugify
-import voluptuous as vol
+import probatio
 
 from .art import edit_kind, find_edit_parts, find_flux_parts, list_checkpoints, list_edit_models
 from .const import (
@@ -75,32 +75,32 @@ def _number(low: float, high: float, step: float, unit: str) -> sel.NumberSelect
 
 SENSOR = sel.EntitySelector(sel.EntitySelectorConfig(domain="sensor"))
 QUEST_SCHEMA = {
-    vol.Optional(SOURCES["steps"]): SENSOR,
-    vol.Required(GOALS["steps"][0], default=GOALS["steps"][1]): _number(500, 50000, 500, "steps"),
-    vol.Optional(SOURCES["sleep"]): SENSOR,
-    vol.Required(GOALS["sleep"][0], default=GOALS["sleep"][1]): _number(4, 12, 0.25, "h"),
-    vol.Required(CONF_BEDTIME_ON, default=True): sel.BooleanSelector(),
-    vol.Required(CONF_BEDTIME, default=GOALS["bedtime"][1]): sel.TimeSelector(),
-    vol.Optional(CONF_CLOCK): sel.SelectSelector(
+    probatio.Optional(SOURCES["steps"]): SENSOR,
+    probatio.Required(GOALS["steps"][0], default=GOALS["steps"][1]): _number(500, 50000, 500, "steps"),
+    probatio.Optional(SOURCES["sleep"]): SENSOR,
+    probatio.Required(GOALS["sleep"][0], default=GOALS["sleep"][1]): _number(4, 12, 0.25, "h"),
+    probatio.Required(CONF_BEDTIME_ON, default=True): sel.BooleanSelector(),
+    probatio.Required(CONF_BEDTIME, default=GOALS["bedtime"][1]): sel.TimeSelector(),
+    probatio.Optional(CONF_CLOCK): sel.SelectSelector(
         sel.SelectSelectorConfig(options=CLOCK_OPTIONS, translation_key="clock", mode=sel.SelectSelectorMode.LIST)
     ),
-    vol.Optional(SOURCES["floors"]): SENSOR,
-    vol.Required(GOALS["floors"][0], default=GOALS["floors"][1]): _number(1, 100, 1, "floors"),
-    vol.Optional(SOURCES["hydration"]): SENSOR,
-    vol.Required(CONF_WATER_UNIT, default="ml"): sel.SelectSelector(
+    probatio.Optional(SOURCES["floors"]): SENSOR,
+    probatio.Required(GOALS["floors"][0], default=GOALS["floors"][1]): _number(1, 100, 1, "floors"),
+    probatio.Optional(SOURCES["hydration"]): SENSOR,
+    probatio.Required(CONF_WATER_UNIT, default="ml"): sel.SelectSelector(
         sel.SelectSelectorConfig(
             options=WATER_UNIT_OPTIONS, translation_key="water_unit", mode=sel.SelectSelectorMode.LIST
         )
     ),
-    vol.Required(GOALS["hydration"][0], default=GOALS["hydration"][1]): sel.NumberSelector(
+    probatio.Required(GOALS["hydration"][0], default=GOALS["hydration"][1]): sel.NumberSelector(
         sel.NumberSelectorConfig(min=1, max=6000, step=1, mode=sel.NumberSelectorMode.BOX)
     ),
-    vol.Optional(CONF_MANUAL, default=[]): sel.SelectSelector(
+    probatio.Optional(CONF_MANUAL, default=[]): sel.SelectSelector(
         sel.SelectSelectorConfig(
             options=MANUAL_OPTIONS, translation_key="manual_quests", multiple=True, mode=sel.SelectSelectorMode.LIST
         )
     ),
-    vol.Optional(CONF_CORRECTIONS, default=[]): sel.SelectSelector(
+    probatio.Optional(CONF_CORRECTIONS, default=[]): sel.SelectSelector(
         sel.SelectSelectorConfig(
             options=CORRECTION_OPTIONS, translation_key="corrections", multiple=True, mode=sel.SelectSelectorMode.LIST
         )
@@ -162,13 +162,13 @@ class LifeRPGConfigFlow(ConfigFlow, domain=DOMAIN):
             self._abort_if_unique_id_configured()
             if not (errors := _errors(options)):
                 return self.async_create_entry(title=user_input[CONF_NAME], data={}, options=options)
-        schema = vol.Schema(
+        schema = probatio.Schema(
             {
-                vol.Required(CONF_NAME, default="User"): str,
-                vol.Optional(CONF_USER): await _user_selector(self.hass),
-                vol.Required(CONF_RACE, default="human"): RACE_SELECTOR,
-                vol.Required(CONF_BODY, default="androgynous"): BODY_SELECTOR,
-                vol.Optional(CONF_GODDESS): sel.TextSelector(),
+                probatio.Required(CONF_NAME, default="User"): str,
+                probatio.Optional(CONF_USER): await _user_selector(self.hass),
+                probatio.Required(CONF_RACE, default="human"): RACE_SELECTOR,
+                probatio.Required(CONF_BODY, default="androgynous"): BODY_SELECTOR,
+                probatio.Optional(CONF_GODDESS): sel.TextSelector(),
                 **QUEST_SCHEMA,
             }
         )
@@ -198,7 +198,7 @@ class LifeRPGOptionsFlow(OptionsFlowWithReload):
         if user_input is not None and not (errors := _errors(user_input)):
             keep = {k: v for k, v in current.items() if k not in QUEST_KEYS}
             return self.async_create_entry(data={**keep, **user_input})
-        schema = vol.Schema({vol.Optional(CONF_USER): await _user_selector(self.hass), **QUEST_SCHEMA})
+        schema = probatio.Schema({probatio.Optional(CONF_USER): await _user_selector(self.hass), **QUEST_SCHEMA})
         return self.async_show_form(
             step_id="quests",
             data_schema=self.add_suggested_values_to_schema(
@@ -216,15 +216,17 @@ class LifeRPGOptionsFlow(OptionsFlowWithReload):
             data = {**keep, **{k: v for k, v in user_input.items() if v not in (None, "")}}
             data.pop(CONF_GODDESS, None)
             return self.async_create_entry(data={**data, **({CONF_GODDESS: name} if name else {})})
-        schema = vol.Schema(
+        schema = probatio.Schema(
             {
-                vol.Optional(CONF_GODDESS): sel.TextSelector(),
-                vol.Required(CONF_PERSONA, default="goddess"): sel.SelectSelector(
+                probatio.Optional(CONF_GODDESS): sel.TextSelector(),
+                probatio.Required(CONF_PERSONA, default="goddess"): sel.SelectSelector(
                     sel.SelectSelectorConfig(
                         options=PERSONAS, translation_key="goddess_persona", mode=sel.SelectSelectorMode.LIST
                     )
                 ),
-                vol.Optional(CONF_CHAT_AGENT): sel.ConversationAgentSelector(sel.ConversationAgentSelectorConfig()),
+                probatio.Optional(CONF_CHAT_AGENT): sel.ConversationAgentSelector(
+                    sel.ConversationAgentSelectorConfig()
+                ),
             }
         )
         return self.async_show_form(step_id="goddess", data_schema=self.add_suggested_values_to_schema(schema, current))
@@ -237,12 +239,12 @@ class LifeRPGOptionsFlow(OptionsFlowWithReload):
             return self.async_create_entry(
                 data={**keep, **user_input, CONF_DAILY_BOUNTIES: int(user_input[CONF_DAILY_BOUNTIES])}
             )
-        schema = vol.Schema(
+        schema = probatio.Schema(
             {
-                vol.Required(CONF_DAILY_BOUNTIES, default=5): sel.NumberSelector(
+                probatio.Required(CONF_DAILY_BOUNTIES, default=5): sel.NumberSelector(
                     sel.NumberSelectorConfig(min=0, max=10, step=1, mode=sel.NumberSelectorMode.SLIDER)
                 ),
-                vol.Required(CONF_KIDS, default=False): sel.BooleanSelector(),
+                probatio.Required(CONF_KIDS, default=False): sel.BooleanSelector(),
             }
         )
         return self.async_show_form(
@@ -255,17 +257,17 @@ class LifeRPGOptionsFlow(OptionsFlowWithReload):
         if user_input is not None:
             keep = {k: v for k, v in current.items() if k not in WORK_KEYS}
             return self.async_create_entry(data={**keep, **user_input})
-        schema = vol.Schema(
+        schema = probatio.Schema(
             {
-                vol.Required(CONF_PENALTY, default=WORK_DEFAULTS[CONF_PENALTY]): sel.BooleanSelector(),
-                vol.Required(CONF_WORK_DAYS, default=WORK_DEFAULTS[CONF_WORK_DAYS]): sel.SelectSelector(
+                probatio.Required(CONF_PENALTY, default=WORK_DEFAULTS[CONF_PENALTY]): sel.BooleanSelector(),
+                probatio.Required(CONF_WORK_DAYS, default=WORK_DEFAULTS[CONF_WORK_DAYS]): sel.SelectSelector(
                     sel.SelectSelectorConfig(
                         options=WEEKDAYS, translation_key="weekday", multiple=True, mode=sel.SelectSelectorMode.LIST
                     )
                 ),
-                vol.Required(CONF_WORK_START, default=WORK_DEFAULTS[CONF_WORK_START]): sel.TimeSelector(),
-                vol.Required(CONF_WORK_END, default=WORK_DEFAULTS[CONF_WORK_END]): sel.TimeSelector(),
-                vol.Optional(CONF_WORK_ENTITY): sel.EntitySelector(
+                probatio.Required(CONF_WORK_START, default=WORK_DEFAULTS[CONF_WORK_START]): sel.TimeSelector(),
+                probatio.Required(CONF_WORK_END, default=WORK_DEFAULTS[CONF_WORK_END]): sel.TimeSelector(),
+                probatio.Optional(CONF_WORK_ENTITY): sel.EntitySelector(
                     sel.EntitySelectorConfig(domain=["schedule", "calendar", "binary_sensor", "input_boolean"])
                 ),
             }
@@ -343,47 +345,49 @@ class LifeRPGOptionsFlow(OptionsFlowWithReload):
                 keep = {k: v for k, v in current.items() if k not in STUDIO_KEYS}
                 data = {**keep, **user_input, **parts, CONF_COMFY_URL: url}
                 return self.async_create_entry(data={k: v for k, v in data.items() if v not in (None, "")})
-        schema = vol.Schema(
+        schema = probatio.Schema(
             {
-                vol.Required(CONF_ART_STYLE, default="painted"): sel.SelectSelector(
+                probatio.Required(CONF_ART_STYLE, default="painted"): sel.SelectSelector(
                     sel.SelectSelectorConfig(
                         options=ART_STYLES, translation_key="art_style", mode=sel.SelectSelectorMode.LIST
                     )
                 ),
-                vol.Required(CONF_BODY, default="androgynous"): BODY_SELECTOR,
-                vol.Optional(CONF_COMFY_URL): sel.TextSelector(sel.TextSelectorConfig(type=sel.TextSelectorType.URL)),
-                vol.Required(CONF_FAMILY, default="sdxl"): sel.SelectSelector(
+                probatio.Required(CONF_BODY, default="androgynous"): BODY_SELECTOR,
+                probatio.Optional(CONF_COMFY_URL): sel.TextSelector(
+                    sel.TextSelectorConfig(type=sel.TextSelectorType.URL)
+                ),
+                probatio.Required(CONF_FAMILY, default="sdxl"): sel.SelectSelector(
                     sel.SelectSelectorConfig(
                         options=FAMILY_OPTIONS, translation_key="model_family", mode=sel.SelectSelectorMode.LIST
                     )
                 ),
-                vol.Optional(CONF_CHECKPOINT): sel.SelectSelector(
+                probatio.Optional(CONF_CHECKPOINT): sel.SelectSelector(
                     sel.SelectSelectorConfig(
                         options=checkpoints or ([values[CONF_CHECKPOINT]] if values.get(CONF_CHECKPOINT) else []),
                         custom_value=True,
                         mode=sel.SelectSelectorMode.DROPDOWN,
                     )
                 ),
-                vol.Required(CONF_PAINT, default=PAINT_OPTIONS): sel.SelectSelector(
+                probatio.Required(CONF_PAINT, default=PAINT_OPTIONS): sel.SelectSelector(
                     sel.SelectSelectorConfig(
                         options=PAINT_OPTIONS, translation_key="paint", multiple=True, mode=sel.SelectSelectorMode.LIST
                     )
                 ),
-                vol.Required(CONF_SPEED, default="balanced"): sel.SelectSelector(
+                probatio.Required(CONF_SPEED, default="balanced"): sel.SelectSelector(
                     sel.SelectSelectorConfig(
                         options=SPEED_OPTIONS, translation_key="paint_speed", mode=sel.SelectSelectorMode.LIST
                     )
                 ),
-                vol.Required(CONF_FAST_MODEL, default=False): sel.BooleanSelector(),
-                vol.Optional(CONF_EDIT_MODEL): sel.SelectSelector(
+                probatio.Required(CONF_FAST_MODEL, default=False): sel.BooleanSelector(),
+                probatio.Optional(CONF_EDIT_MODEL): sel.SelectSelector(
                     sel.SelectSelectorConfig(
                         options=edit_models or ([values[CONF_EDIT_MODEL]] if values.get(CONF_EDIT_MODEL) else []),
                         custom_value=True,
                         mode=sel.SelectSelectorMode.DROPDOWN,
                     )
                 ),
-                vol.Optional(CONF_AI_TASK): sel.EntitySelector(sel.EntitySelectorConfig(domain="ai_task")),
-                vol.Required(CONF_LLM, default=LLM_OPTIONS): sel.SelectSelector(
+                probatio.Optional(CONF_AI_TASK): sel.EntitySelector(sel.EntitySelectorConfig(domain="ai_task")),
+                probatio.Required(CONF_LLM, default=LLM_OPTIONS): sel.SelectSelector(
                     sel.SelectSelectorConfig(
                         options=LLM_OPTIONS,
                         translation_key="llm_features",

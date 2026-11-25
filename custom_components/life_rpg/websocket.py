@@ -10,7 +10,7 @@ from typing import Any
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
-import voluptuous as vol
+import probatio
 
 from .const import DOMAIN, VERSION
 from .coordinator import LifeRPGCoordinator
@@ -40,7 +40,7 @@ def _get(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: d
     return coordinator
 
 
-@websocket_api.websocket_command({vol.Required("type"): "life_rpg/players"})
+@websocket_api.websocket_command({probatio.Required("type"): "life_rpg/players"})
 @callback
 def ws_players(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
     """List adventurers for the party screen."""
@@ -65,7 +65,7 @@ def ws_players(hass: HomeAssistant, connection: websocket_api.ActiveConnection, 
     connection.send_result(msg["id"], {"players": players, "is_admin": connection.user.is_admin})
 
 
-@websocket_api.websocket_command({vol.Required("type"): "life_rpg/subscribe", vol.Required("entry_id"): str})
+@websocket_api.websocket_command({probatio.Required("type"): "life_rpg/subscribe", probatio.Required("entry_id"): str})
 @callback
 def ws_subscribe(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
     """Stream an adventurer's game view; every update carries the events it raised."""
@@ -97,30 +97,34 @@ def ws_subscribe(hass: HomeAssistant, connection: websocket_api.ActiveConnection
 
 @websocket_api.websocket_command(
     {
-        vol.Required("type"): "life_rpg/action",
-        vol.Required("entry_id"): str,
-        vol.Required("action"): str,
-        vol.Optional("chest_id"): int,
-        vol.Optional("item_id"): int,
-        vol.Optional("slot"): str,
-        vol.Optional("title"): vol.Any(str, None),
-        vol.Optional("job"): str,
-        vol.Optional("accept"): bool,
-        vol.Optional("stock_id"): int,
-        vol.Optional("offer"): vol.All(int, vol.Range(min=0)),
-        vol.Optional("consumable"): str,
-        vol.Optional("category"): str,
-        vol.Optional("cosmetic"): vol.Any(str, None),
-        vol.Optional("quest"): str,
-        vol.Optional("amount"): vol.All(vol.Coerce(float), vol.Range(min=-5000, max=5000)),
-        vol.Optional("url"): vol.All(str, vol.Length(max=300)),
-        vol.Optional("today"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=100000))),
-        vol.Optional("record"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=100000))),
-        vol.Optional("bedtime"): vol.All(str, vol.Length(max=40)),
-        vol.Optional("wake"): vol.All(str, vol.Length(max=40)),
-        vol.Optional("prefs"): vol.Schema(
+        probatio.Required("type"): "life_rpg/action",
+        probatio.Required("entry_id"): str,
+        probatio.Required("action"): str,
+        probatio.Optional("chest_id"): int,
+        probatio.Optional("item_id"): int,
+        probatio.Optional("slot"): str,
+        probatio.Optional("title"): probatio.Any(str, None),
+        probatio.Optional("job"): str,
+        probatio.Optional("accept"): bool,
+        probatio.Optional("stock_id"): int,
+        probatio.Optional("offer"): probatio.All(int, probatio.Range(min=0)),
+        probatio.Optional("consumable"): str,
+        probatio.Optional("category"): str,
+        probatio.Optional("cosmetic"): probatio.Any(str, None),
+        probatio.Optional("quest"): str,
+        probatio.Optional("amount"): probatio.All(probatio.Coerce(float), probatio.Range(min=-5000, max=5000)),
+        probatio.Optional("url"): probatio.All(str, probatio.Length(max=300)),
+        probatio.Optional("today"): probatio.Any(
+            None, probatio.All(probatio.Coerce(float), probatio.Range(min=0, max=100000))
+        ),
+        probatio.Optional("record"): probatio.Any(
+            None, probatio.All(probatio.Coerce(float), probatio.Range(min=0, max=100000))
+        ),
+        probatio.Optional("bedtime"): probatio.All(str, probatio.Length(max=40)),
+        probatio.Optional("wake"): probatio.All(str, probatio.Length(max=40)),
+        probatio.Optional("prefs"): probatio.Schema(
             {
-                vol.Optional(k): vol.Any(None, vol.All(str, vol.Length(max=40)))
+                probatio.Optional(k): probatio.Any(None, probatio.All(str, probatio.Length(max=40)))
                 for k in (
                     "race",
                     "age",
@@ -137,12 +141,12 @@ def ws_subscribe(hass: HomeAssistant, connection: websocket_api.ActiveConnection
                 )
             }
         ),
-        vol.Optional("bounty_id"): int,
-        vol.Optional("xp"): vol.All(vol.Coerce(int), vol.Range(min=0, max=1000)),
-        vol.Optional("gold"): vol.All(vol.Coerce(int), vol.Range(min=0, max=1000)),
-        vol.Optional("chest"): bool,
-        vol.Optional("repeat"): vol.In(["once", "daily", "weekly"]),
-        vol.Optional("ok"): bool,
+        probatio.Optional("bounty_id"): int,
+        probatio.Optional("xp"): probatio.All(probatio.Coerce(int), probatio.Range(min=0, max=1000)),
+        probatio.Optional("gold"): probatio.All(probatio.Coerce(int), probatio.Range(min=0, max=1000)),
+        probatio.Optional("chest"): bool,
+        probatio.Optional("repeat"): probatio.In(["once", "daily", "weekly"]),
+        probatio.Optional("ok"): bool,
     }
 )
 @websocket_api.async_response
@@ -194,11 +198,11 @@ async def ws_action(hass: HomeAssistant, connection: websocket_api.ActiveConnect
 
 @websocket_api.websocket_command(
     {
-        vol.Required("type"): "life_rpg/chat",
-        vol.Required("entry_id"): str,
-        vol.Required("who"): vol.In(["lune", "merchant"]),
-        vol.Required("text"): vol.All(str, vol.Length(min=1, max=500)),
-        vol.Optional("stock_id"): vol.Any(int, None),
+        probatio.Required("type"): "life_rpg/chat",
+        probatio.Required("entry_id"): str,
+        probatio.Required("who"): probatio.In(["lune", "merchant"]),
+        probatio.Required("text"): probatio.All(str, probatio.Length(min=1, max=500)),
+        probatio.Optional("stock_id"): probatio.Any(int, None),
     }
 )
 @websocket_api.async_response

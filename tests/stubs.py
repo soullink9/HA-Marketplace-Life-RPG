@@ -3,7 +3,7 @@
 Not a substitute for real Home Assistant: it checks our code paths (reading states, unit conversion, sleep
 sessions, sensors, the event entity, the config flow's schema, websocket commands) against small fakes of the
 Home Assistant APIs we use. If Home Assistant changes one of those APIs, update the fake here to match.
-Needs voluptuous (pip install -r tests/requirements.txt).
+Needs probatio (pip install -r tests/requirements.txt).
 """
 
 import asyncio
@@ -16,7 +16,7 @@ from zoneinfo import ZoneInfo
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "custom_components"))  # so `import life_rpg` finds the integration
-import voluptuous as vol  # noqa: E402,F401 - the tests use it through `from stubs import *`
+import probatio  # noqa: E402,F401 - the tests use it through `from stubs import *`
 
 TZ = ZoneInfo("America/New_York")
 NOW = [datetime(2026, 10, 12, 9, 0, tzinfo=TZ)]

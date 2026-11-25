@@ -20,13 +20,13 @@
  * Other files: styles.js (all CSS), art.js (pixel art for the adventurer, gear and monsters),
  * cast.js (pixel art for the goddess, the merchant and the other people).
  */
-import { adventurerArt, itemIconArt, monsterArt, RARITY_GLOW } from "./art.js?v=1.5.3";
-import { luneArt, merchantArt, npcArt, trinketArt } from "./cast.js?v=1.5.3";
-import { CARD_CSS, CSS, PANEL_CSS } from "./styles.js?v=1.5.3";
+import { adventurerArt, itemIconArt, monsterArt, RARITY_GLOW } from "./art.js?v=1.5.4";
+import { luneArt, merchantArt, npcArt, trinketArt } from "./cast.js?v=1.5.4";
+import { CARD_CSS, CSS, PANEL_CSS } from "./styles.js?v=1.5.4";
 
 // The panel's element name carries the version, so a Home Assistant app that kept an older panel in memory
 // loads this one as soon as Home Assistant hands it the new panel (see __init__.py).
-const VERSION = "1.5.3";
+const VERSION = "1.5.4";
 const PANEL_TAG = `life-rpg-panel-${VERSION.replace(/\./g, "-")}`;
 
 // Pixel art is the stand-in for every painting; a viewer can also prefer it on this device.

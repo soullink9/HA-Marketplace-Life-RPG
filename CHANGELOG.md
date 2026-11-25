@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.5.4 (2026-11-25)
+
+### Under the hood
+
+- Life RPG validates its settings, services, panel requests and Assist tools with probatio, the library Home
+  Assistant 2026.11 uses in place of voluptuous. Nothing changes for you: Home Assistant was already answering
+  Life RPG's voluptuous imports with probatio, and now Life RPG asks for it by name.
+- The checks run on Node 26 and the latest GitHub actions, and the Gitea checks on Debian trixie images.
+
 ## 1.5.3 (2026-11-22)
 
 ### Paintings

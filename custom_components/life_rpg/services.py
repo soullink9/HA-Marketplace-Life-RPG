@@ -7,28 +7,28 @@ life_rpg.log_sleep  last night's sleep: bedtime and wake-up ("22:30" / "06:45" o
 
 from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, SupportsResponse
 from homeassistant.exceptions import HomeAssistantError, Unauthorized
-import voluptuous as vol
+import probatio
 
 from .const import DOMAIN
 from .engine.rules import GameError
 
-ADVENTURER = vol.Optional("adventurer")
-LOG_SCHEMA = vol.Schema(
+ADVENTURER = probatio.Optional("adventurer")
+LOG_SCHEMA = probatio.Schema(
     {
         ADVENTURER: str,
-        vol.Required("quest"): vol.In(["hydration", "floors"]),
-        vol.Required("amount"): vol.All(vol.Coerce(float), vol.Range(min=-5000, max=5000)),
+        probatio.Required("quest"): probatio.In(["hydration", "floors"]),
+        probatio.Required("amount"): probatio.All(probatio.Coerce(float), probatio.Range(min=-5000, max=5000)),
     }
 )
-CORRECT_SCHEMA = vol.Schema(
+CORRECT_SCHEMA = probatio.Schema(
     {
         ADVENTURER: str,
-        vol.Required("quest"): vol.In(["steps", "floors", "hydration"]),
-        vol.Optional("today"): vol.All(vol.Coerce(float), vol.Range(min=0, max=100000)),
-        vol.Optional("record"): vol.All(vol.Coerce(float), vol.Range(min=0, max=100000)),
+        probatio.Required("quest"): probatio.In(["steps", "floors", "hydration"]),
+        probatio.Optional("today"): probatio.All(probatio.Coerce(float), probatio.Range(min=0, max=100000)),
+        probatio.Optional("record"): probatio.All(probatio.Coerce(float), probatio.Range(min=0, max=100000)),
     }
 )
-SLEEP_SCHEMA = vol.Schema({ADVENTURER: str, vol.Required("bedtime"): str, vol.Optional("wake"): str})
+SLEEP_SCHEMA = probatio.Schema({ADVENTURER: str, probatio.Required("bedtime"): str, probatio.Optional("wake"): str})
 
 
 async def _coordinator(hass: HomeAssistant, call: ServiceCall):

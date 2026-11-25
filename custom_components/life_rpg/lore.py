@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.components import ai_task
 from homeassistant.core import Context, HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
-import voluptuous as vol
+import probatio
 
 from .engine import appearance as A, market as M
 from .engine.appearance import LUNE_MOODS
@@ -252,7 +252,7 @@ class LoreWriter:
         """One AI Task call; None if no LLM is available or it fails."""
         if self.goddess != GODDESS:  # never let the default name slip into a prompt
             instructions = instructions.replace(GODDESS, self.goddess)
-        schema = vol.Schema(structure or {vol.Required("text", description="The text to show."): str})
+        schema = probatio.Schema(structure or {probatio.Required("text", description="The text to show."): str})
         async with self._lock:
             try:
                 result = await ai_task.async_generate_data(
@@ -310,8 +310,8 @@ class LoreWriter:
                     f"{', '.join(moods)}."
                 ),
                 {
-                    vol.Required("reply", description=f"{self.goddess}'s reply, in her own words"): str,
-                    vol.Required("mood", description="One of: " + ", ".join(moods)): vol.In(moods),
+                    probatio.Required("reply", description=f"{self.goddess}'s reply, in her own words"): str,
+                    probatio.Required("mood", description="One of: " + ", ".join(moods)): probatio.In(moods),
                 },
             )
             if not data or not str(data.get("reply", "")).strip():
@@ -525,7 +525,7 @@ class LoreWriter:
                 f"(moving a little, tidying, kindness, rest, water, fresh air, learning). No medical or diet advice, nothing "
                 f"risky. Write each as a plain imperative under 60 characters, without numbers of rewards. Family-friendly."
             ),
-            {vol.Required("tasks", description=f"Exactly {n} tasks"): [str]},
+            {probatio.Required("tasks", description=f"Exactly {n} tasks"): [str]},
         )
         tasks = [t for t in (data or {}).get("tasks", []) if isinstance(t, str) and 3 < len(t.strip()) <= 80]
         if not tasks:

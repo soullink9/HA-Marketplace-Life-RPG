@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import llm
 from homeassistant.util.json import JsonObjectType
-import voluptuous as vol
+import probatio
 
 from .const import DOMAIN
 from .engine.market import CONSUMABLES
@@ -24,7 +24,7 @@ PROMPT = (
     "log it with life_rpg_log or life_rpg_log_sleep (water goes in the adventurer's water unit from the status, mL or fl oz; a glass is about 250 mL or 8 fl oz). If they say a count is wrong (for example steps counted twice), fix it with life_rpg_fix_count. Speak briefly, like a game's System voice. Only state numbers the tools return. "
     "Haggling: offer a price with life_rpg_haggle; the merchant's answer and price come back from the tool."
 )
-ADVENTURER = vol.Optional("adventurer", description="Adventurer name, only if the household has several")
+ADVENTURER = probatio.Optional("adventurer", description="Adventurer name, only if the household has several")
 
 
 def _coordinators(hass: HomeAssistant) -> list[Any]:
@@ -133,7 +133,7 @@ class Status(_Tool):
     description = (
         "The adventurer's level, rank, streak, today's quests, labyrinth guardian, daily choice, chests and gold."
     )
-    parameters = vol.Schema({ADVENTURER: str})
+    parameters = probatio.Schema({ADVENTURER: str})
 
     async def run(self, coord: Any) -> JsonObjectType:
         """Collect the status from the current view."""
@@ -183,8 +183,8 @@ class AnswerChoice(_Tool):
     name = "life_rpg_answer_choice"
     title = "Answer the daily choice"
     description = "Accept or decline today's daily choice."
-    parameters = vol.Schema(
-        {vol.Required("accept", description="true to accept, false to decline"): bool, ADVENTURER: str}
+    parameters = probatio.Schema(
+        {probatio.Required("accept", description="true to accept, false to decline"): bool, ADVENTURER: str}
     )
     annotations = ACTS
 
@@ -200,7 +200,7 @@ class OpenChests(_Tool):
     name = "life_rpg_open_chests"
     title = "Open chests"
     description = "Open every waiting chest and say what was inside."
-    parameters = vol.Schema({ADVENTURER: str})
+    parameters = probatio.Schema({ADVENTURER: str})
     annotations = ACTS
 
     async def run(self, coord: Any) -> JsonObjectType:
@@ -215,7 +215,7 @@ class Inventory(_Tool):
     name = "life_rpg_inventory"
     title = "Show the inventory"
     description = "List gear (equipped and spare) with sale values, plus consumables in the bag."
-    parameters = vol.Schema({ADVENTURER: str})
+    parameters = probatio.Schema({ADVENTURER: str})
 
     async def run(self, coord: Any) -> JsonObjectType:
         """List the inventory."""
@@ -244,7 +244,7 @@ class Equip(_Tool):
     name = "life_rpg_equip"
     title = "Equip gear"
     description = "Equip a piece of gear by name or id."
-    parameters = vol.Schema({vol.Required("item", description="Item name or id"): str, ADVENTURER: str})
+    parameters = probatio.Schema({probatio.Required("item", description="Item name or id"): str, ADVENTURER: str})
     annotations = ACTS
 
     async def run(self, coord: Any, item: str) -> JsonObjectType:
@@ -260,7 +260,9 @@ class Sell(_Tool):
     name = "life_rpg_sell"
     title = "Sell items"
     description = "Sell a spare (unequipped) item to the merchant for gold. Use item 'junk' to sell all common spares."
-    parameters = vol.Schema({vol.Required("item", description="Item name or id, or 'junk'"): str, ADVENTURER: str})
+    parameters = probatio.Schema(
+        {probatio.Required("item", description="Item name or id, or 'junk'"): str, ADVENTURER: str}
+    )
     annotations = REMOVES
 
     async def run(self, coord: Any, item: str) -> JsonObjectType:
@@ -283,7 +285,7 @@ class Shop(_Tool):
     name = "life_rpg_shop"
     title = "Show the market"
     description = "What the merchant Marrow Fennick is selling today, with prices."
-    parameters = vol.Schema({ADVENTURER: str})
+    parameters = probatio.Schema({ADVENTURER: str})
 
     async def run(self, coord: Any) -> JsonObjectType:
         """List today's stock."""
@@ -304,7 +306,9 @@ class Buy(_Tool):
     name = "life_rpg_buy"
     title = "Buy from the market"
     description = "Buy something from today's market at its current price."
-    parameters = vol.Schema({vol.Required("item", description="Name or id from the shop list"): str, ADVENTURER: str})
+    parameters = probatio.Schema(
+        {probatio.Required("item", description="Name or id from the shop list"): str, ADVENTURER: str}
+    )
     annotations = ACTS
 
     async def run(self, coord: Any, item: str) -> JsonObjectType:
@@ -324,11 +328,11 @@ class Haggle(_Tool):
         "firm or takes offence at a lowball; raising the offer a little each round works best), or walk away "
         "(he sometimes calls you back with a better price)."
     )
-    parameters = vol.Schema(
+    parameters = probatio.Schema(
         {
-            vol.Required("item", description="Name or id from the shop list"): str,
-            vol.Optional("offer", description="Gold offered"): vol.Coerce(int),
-            vol.Optional("walk_away", description="True to turn away from the deal"): bool,
+            probatio.Required("item", description="Name or id from the shop list"): str,
+            probatio.Optional("offer", description="Gold offered"): probatio.Coerce(int),
+            probatio.Optional("walk_away", description="True to turn away from the deal"): bool,
             ADVENTURER: str,
         }
     )
@@ -350,7 +354,7 @@ class UseItem(_Tool):
     name = "life_rpg_use"
     title = "Use an item"
     description = "Use a consumable from the bag (elixir, charm, scroll, feather...)."
-    parameters = vol.Schema({vol.Required("item", description="Consumable name or id"): str, ADVENTURER: str})
+    parameters = probatio.Schema({probatio.Required("item", description="Consumable name or id"): str, ADVENTURER: str})
     annotations = ACTS
 
     async def run(self, coord: Any, item: str) -> JsonObjectType:
@@ -370,12 +374,12 @@ class LogQuest(_Tool):
         "Log water drunk (in the adventurer's water unit: mL or fl oz) or flights of stairs climbed toward "
         "today's quest. Negative amounts undo."
     )
-    parameters = vol.Schema(
+    parameters = probatio.Schema(
         {
-            vol.Required("quest", description="water or stairs"): vol.In(["water", "stairs"]),
-            vol.Required("amount", description="water in the adventurer's unit, or number of flights"): vol.Coerce(
-                float
-            ),
+            probatio.Required("quest", description="water or stairs"): probatio.In(["water", "stairs"]),
+            probatio.Required(
+                "amount", description="water in the adventurer's unit, or number of flights"
+            ): probatio.Coerce(float),
             ADVENTURER: str,
         }
     )
@@ -403,10 +407,10 @@ class FixCount(_Tool):
         "Set today's real count for steps, floors or water when the sensor got it wrong (for example two "
         "apps counting the same steps). Water is in the adventurer's water unit."
     )
-    parameters = vol.Schema(
+    parameters = probatio.Schema(
         {
-            vol.Required("quest"): vol.In(["steps", "floors", "water"]),
-            vol.Required("today", description="the real count for today"): vol.Coerce(float),
+            probatio.Required("quest"): probatio.In(["steps", "floors", "water"]),
+            probatio.Required("today", description="the real count for today"): probatio.Coerce(float),
             ADVENTURER: str,
         }
     )
@@ -433,8 +437,8 @@ class Bounties(_Tool):
         "The bounty board: today's side quests and chores. Pass `done` with the task they say they finished "
         "to mark it done (chores in kids mode then wait for a parent's approval)."
     )
-    parameters = vol.Schema(
-        {vol.Optional("done", description="The bounty they finished, in their words"): str, ADVENTURER: str}
+    parameters = probatio.Schema(
+        {probatio.Optional("done", description="The bounty they finished, in their words"): str, ADVENTURER: str}
     )
     annotations = ACTS
 
@@ -481,10 +485,10 @@ class LogSleep(_Tool):
         "Log last night's sleep from bedtime and wake-up time (24-hour HH:MM). Without a wake-up time only the "
         "bedtime (Lights out quest) is logged."
     )
-    parameters = vol.Schema(
+    parameters = probatio.Schema(
         {
-            vol.Required("bedtime", description="e.g. 22:45"): str,
-            vol.Optional("wake", description="e.g. 06:30"): str,
+            probatio.Required("bedtime", description="e.g. 22:45"): str,
+            probatio.Optional("wake", description="e.g. 06:30"): str,
             ADVENTURER: str,
         }
     )
@@ -508,7 +512,7 @@ class TalkToGoddess(_Tool):
     name = "life_rpg_talk_to_goddess"
     title = "Talk to the goddess"
     description = "Pass a message to the user's goddess and get her reply (read it out in her words)."
-    parameters = vol.Schema({vol.Required("message"): str, ADVENTURER: str})
+    parameters = probatio.Schema({probatio.Required("message"): str, ADVENTURER: str})
     annotations = ACTS
 
     async def run(self, coord: Any, message: str) -> JsonObjectType:
