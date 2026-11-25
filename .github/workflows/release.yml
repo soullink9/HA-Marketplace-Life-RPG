@@ -32,6 +32,12 @@ concurrency:
   group: release
   cancel-in-progress: false
 
+env:
+  # No telemetry (CONTRIBUTING.md): DO_NOT_TRACK tells every tool that honours it not to report usage
+  DO_NOT_TRACK: "1"
+  # gh sends usage telemetry by default, from CI too; GH_TELEMETRY is its own switch and wins over DO_NOT_TRACK
+  GH_TELEMETRY: "false"
+
 jobs:
   plan:
     runs-on: ubuntu-latest

@@ -13,6 +13,10 @@ on:
 permissions:
   contents: read
 
+env:
+  # No telemetry (CONTRIBUTING.md): DO_NOT_TRACK tells every tool that honours it not to report usage
+  DO_NOT_TRACK: "1"
+
 jobs:
   lint:
     name: Lint and format (ruff), panel scripts (node)

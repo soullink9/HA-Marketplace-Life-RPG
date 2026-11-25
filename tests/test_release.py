@@ -361,12 +361,28 @@ def test_plan():
     check("::warning::v0.9.0" in result.stdout, "…and warns, in the run's log, about the tag it can't build")
 
 
+def test_no_telemetry():
+    # No telemetry, ever (CONTRIBUTING.md): every workflow tells its tools not to report usage, and gh, which reports
+    # usage by default, is switched off by name.
+    workflows = sorted(
+        [*(ROOT / ".github" / "workflows").glob("*.yml"), *(ROOT / ".gitea" / "workflows").glob("*.yml")]
+    )
+    check(workflows, "the workflows are found")
+    for path in workflows:
+        text = path.read_text()
+        name = path.relative_to(ROOT)
+        check("\nenv:\n" in text and 'DO_NOT_TRACK: "1"' in text, f"{name} sets DO_NOT_TRACK for the whole run")
+        if re.search(r"\bgh (release|api|pr|run)\b", text):
+            check('GH_TELEMETRY: "false"' in text, f"{name} runs gh, and turns its telemetry off")
+
+
 if __name__ == "__main__":
     try:
         test_notes()
         test_package()
         test_publish()
         test_plan()
+        test_no_telemetry()
     finally:
         shutil.rmtree(TMP, ignore_errors=True)
     print()

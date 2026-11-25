@@ -8,6 +8,10 @@ how to check a change, and how to release one.
 - **Nothing talks to the internet.** The only outside connections are the ComfyUI address the user enters and
   the AI Task entity or conversation agent they pick in Home Assistant. No fonts, scripts, images, analytics or
   update checks from anywhere else, in the integration or in the panel.
+- **No telemetry, ever.** No analytics, usage reporting, crash reporting (Sentry and the like), tracking or
+  phone-home, in the integration, the panel, the dependencies, the workflows or the tools they run. Every workflow
+  sets `DO_NOT_TRACK: "1"`, and one that runs `gh` also sets `GH_TELEMETRY: "false"` (gh reports usage by
+  default); `tests/test_release.py` checks both. A new tool that collects usage data is turned off or not used.
 - **No new dependencies.** `manifest.json` has no `requirements`, and the panel has no build step. Pillow is used
   when present (it ships with Home Assistant) and everything works without it.
 - **The engine stays pure.** `custom_components/life_rpg/engine/` never imports Home Assistant. It takes readings
